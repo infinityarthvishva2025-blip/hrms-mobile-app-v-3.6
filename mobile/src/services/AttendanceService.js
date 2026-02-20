@@ -1,0 +1,111 @@
+/**
+ * AttendanceService.js
+ * ─────────────────────────────────────────────────────────
+ * API service layer for all attendance-related endpoints.
+ * Each method maps 1:1 to a backend controller action.
+ * ─────────────────────────────────────────────────────────
+ */
+import api from './api';
+
+/**
+ * AsyncStorage key prefixes for per-user attendance data.
+ */
+export const STORAGE_KEYS = {
+  CHECK_IN_TIMESTAMP: 'checkInTimestamp',
+  SHIFT_END_TIMESTAMP: 'shiftEndTimestamp',
+  SHIFT_DURATION: 'shiftDurationSeconds',
+};
+
+/**
+ * Returns a user-scoped AsyncStorage key.
+ * @param {string} baseKey - one of STORAGE_KEYS values
+ * @param {string|number} userId
+ * @returns {string} e.g. 'attendance_checkInTimestamp_123'
+ */
+export const getUserStorageKey = (baseKey, userId) =>
+  `attendance_${baseKey}_${userId}`;
+
+const AttendanceService = {
+  /**
+   * Geo Check-In — POST /api/attendance/geo-checkin
+   * @param {{ latitude: number, longitude: number, accuracy: number }} payload
+   * @returns {Promise<{ success: boolean }>}
+   */
+  geoCheckIn: async ({ latitude, longitude, accuracy }) => {
+    const response = await api.post('/attendance/geo-checkin', {
+      latitude,
+      longitude,
+      accuracy,
+    });
+    return response.data;
+  },
+
+  /**
+   * Geo Check-Out — POST /api/attendance/geo-checkout
+   * Server identifies the employee from the auth token.
+   * @returns {Promise<{ success: boolean }>}
+   */
+  geoCheckOut: async ({latitude , longitude , accuracy}) => {
+    const response = await api.post('/attendance/geo-checkout' ,{
+      latitude ,
+      longitude ,
+      accuracy
+    });
+    return response.data;
+  },
+
+  /**
+   * My Attendance Summary — GET /api/Attendance/my-summary
+   * @param {{ fromDate?: string, toDate?: string }} params
+   * @returns {Promise<{ employee: object, records: Array }>}
+   */
+  getMySummary: async (params = {}) => {
+    const response = await api.get('/Attendance/my-summary', { params });
+    return response.data;
+  },
+
+  /**
+   * Employee Summary (HR View) — GET /api/Attendance/employee-summary/:id
+   * @param {number} employeeId
+   * @param {object} params
+   */
+  getEmployeeSummary: async (employeeId, params = {}) => {
+    const response = await api.get(
+      `/Attendance/employee-summary/${employeeId}`,
+      { params },
+    );
+    return response.data;
+  },
+
+  /**
+   * All Correction Requests (HR) — GET /api/Attendance/correction-requests
+   */
+  getAllCorrectionRequests: async () => {
+    const response = await api.get('/Attendance/correction-requests');
+    return response.data;
+  },
+
+  /**
+   * Correction Request Data — GET /api/Attendance/correction-request
+   * @param {number} employeeId
+   */
+  getCorrectionRequestData: async (employeeId) => {
+    const response = await api.get('/Attendance/correction-request', {
+      params: { employeeId },
+    });
+    return response.data;
+  },
+
+  /**
+   * Submit Correction Request — POST /api/Attendance/correction-request
+   * @param {FormData} formData - multipart/form-data payload
+   */
+  submitCorrectionRequest: async (formData) => {
+    const response = await api.post('/Attendance/correction-request', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+};
+
+export default AttendanceService;
