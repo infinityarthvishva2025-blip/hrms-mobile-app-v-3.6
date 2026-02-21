@@ -5,12 +5,8 @@ import theme from '../../constants/theme';
 const SettingsScreen = () => {
     return (
         <View style={styles.container}>
-            <Text style={styles.text}>SettingsScrnnnnnneennnnnn</Text>
-            <Image
-                source={{ uri: 'https://hrms.infinityarthvishva.com/Employees/ViewDocument?empCode=IA00117&fileName=aadhaar_20260129150824.jpeg' }}
-                style={styles.image}
-                resizeMode="contain" // or 'cover', 'stretch', etc.
-            />
+            <Text style={styles.text}>Settings</Text>
+            
         </View>
     );
 };

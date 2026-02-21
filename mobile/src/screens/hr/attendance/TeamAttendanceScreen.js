@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Activity
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../../../constants/theme';
-import AttendanceService from '../../../services/AttendanceService';
 // We use direct fetch for employee search for now to keep it simple
 import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/api';
 import DatePickerInput from '../../../components/common/DatePickerInput';
 import GradientButton from '../../../components/common/GradientButton';
 import AttendanceTable from '../../../components/common/AttendanceTable';
@@ -31,15 +31,8 @@ const TeamAttendanceScreen = ({ navigation }) => {
 
         setSearchLoading(true);
         try {
-            const response = await fetch('http://192.168.1.75:5000/api/employees', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch employees');
-
-            const data = await response.json();
+            const response = await api.get('/employees');
+            const data = response.data;
 
             // Client-side filtering for simplicity (assuming list isn't huge)
             const filtered = data.filter(e =>

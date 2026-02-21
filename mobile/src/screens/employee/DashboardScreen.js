@@ -17,6 +17,7 @@ import { BarChart } from 'react-native-gifted-charts';
 import theme from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 import { useAttendance } from '../../context/AttendanceContext';
+import api from '../../services/api';
 
 const { width } = Dimensions.get('window');
 const CHART_WIDTH = width - 72;
@@ -68,41 +69,18 @@ const DashboardScreen = () => {
     setErrorMsg('');
 
     try {
-      const dashboardPromise = fetch(
-        `http://192.168.1.75:5000/api/employees/dashboard/${employeeId}?month=${selectedMonth}&year=${selectedYear}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const celebrationsPromise = fetch(
-        `http://192.168.1.75:5000/api/employees/celebrations`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const dashboardPromise = api.get(`/employees/dashboard/${employeeId}?month=${selectedMonth}&year=${selectedYear}`);
+      const celebrationsPromise = api.get('/employees/celebrations').catch(e => {
+        console.log('Celebrations API failed softly:', e.message);
+        return { data: { todaysBirthdays: [], tomorrowsBirthdays: [] }, ok: false };
+      });
 
       const [dashboardRes, celebrationsRes] = await Promise.all([
         dashboardPromise,
         celebrationsPromise,
       ]);
 
-      if (dashboardRes.status === 401 || celebrationsRes.status === 401) {
-        logout();
-        throw new Error('Session expired. Please login again.');
-      }
-
-      if (!dashboardRes.ok) {
-        throw new Error(`Dashboard Error: ${dashboardRes.status}`);
-      }
-
-      const dashboardData = await dashboardRes.json();
+      const dashboardData = dashboardRes.data;
       setDashboard(dashboardData);
 
       const breakdown = {
@@ -113,9 +91,9 @@ const DashboardScreen = () => {
       };
       setAttendanceBreakdown(breakdown);
 
-      if (celebrationsRes.ok) {
-        const celebrationsData = await celebrationsRes.json();
-        console.log(celebrationsData);
+      if (celebrationsRes.ok !== false) {
+        const celebrationsData = celebrationsRes.data;
+        //   console.log(celebrationsData);
         setCelebrations(celebrationsData);
       }
     } catch (error) {

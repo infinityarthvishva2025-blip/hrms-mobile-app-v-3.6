@@ -42,7 +42,7 @@ const MoreMenuScreen = ({ navigation }) => {
             items: [
                 { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
                 // { icon: 'exit-outline', label: 'Resignation', screen: 'ResignationScreen' },
-                { icon: 'settings-outline', label: 'Settings', screen: 'SettingsScreen' },
+                { icon: 'document-text-outline', label: 'PaySlip', screen: 'PayslipsScreen' },
             ]
         },
     ];

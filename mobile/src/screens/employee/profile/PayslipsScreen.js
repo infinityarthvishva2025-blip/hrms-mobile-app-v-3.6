@@ -233,7 +233,7 @@ const PayslipsScreen = ({ navigation }) => {
 
       {/* Payslip Modal */}
       <Modal
-        animationType="slide"
+        animationType="none"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}

@@ -139,7 +139,10 @@ const ApplyLeaveScreen = ({ navigation }) => {
                             setEndDate(new Date());
                             setTimeValue('');
                             setReason('');
-                            navigation.navigate('MyLeavesScreen');
+                            // navigation.navigate('MyLeavesScreen');
+
+
+                            // navigation.navigate('More', { screen: 'MyLeavesScreen', initial: false });
                         },
                     },
                 ]

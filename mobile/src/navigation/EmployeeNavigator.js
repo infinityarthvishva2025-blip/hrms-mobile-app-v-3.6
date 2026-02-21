@@ -98,7 +98,7 @@ const MoreStack = () => (
         <Stack.Screen name="Benefits" component={BenefitsScreen} options={{ title: 'Benefits' }} />
 
         <Stack.Screen name="ResignationScreen" component={ResignationScreen} options={{ title: 'Resignation' }} />
-        <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="PayslipsScreen" component={PayslipsScreen}  options={{ headerShown: false }}/>
         <Stack.Screen name="GurukulScreen" component={GurukulScreen} options={{ title: 'Gurukul' }} />
         <Stack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DailyReportsScreen" component={DailyReportsScreen} options={{ title: 'Daily Reports' }} />

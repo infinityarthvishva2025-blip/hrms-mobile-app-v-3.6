@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../../../constants/theme';
 import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/api';
 
 const EmployeeDetailsScreen = ({ route }) => {
     const { id } = route.params;
@@ -24,17 +25,8 @@ const EmployeeDetailsScreen = ({ route }) => {
 
     const fetchEmployeeDetails = async () => {
         try {
-            const response = await fetch(`http://192.168.1.75:5000/api/employees/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch employee details');
-            }
-
-            const data = await response.json();
+            const response = await api.get(`/employees/${id}`);
+            const data = response.data;
             setEmployee(data);
         } catch (error) {
             console.error('Error fetching employee details:', error);

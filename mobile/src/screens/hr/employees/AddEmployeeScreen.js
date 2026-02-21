@@ -14,10 +14,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../../../constants/theme';
-import { useAuth } from '../../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
+import api from '../../../services/api';
 
 const SectionHeader = ({ title, expanded, onPress }) => (
     <TouchableOpacity style={styles.sectionHeader} onPress={onPress}>
@@ -150,24 +150,12 @@ const AddEmployeeScreen = () => {
         };
 
         try {
-            const response = await fetch('http://192.168.1.75:5000/api/employees', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to create employee');
+            const response = await api.post('/employees', payload);
+            if (response.data) {
+                Alert.alert('Success', 'Employee created successfully!', [
+                    { text: 'OK', onPress: () => navigation.goBack() }
+                ]);
             }
-
-            Alert.alert('Success', 'Employee created successfully!', [
-                { text: 'OK', onPress: () => navigation.goBack() }
-            ]);
-
         } catch (error) {
             console.error('Create Employee Error:', error);
             Alert.alert('Error', error.message || 'Something went wrong.');

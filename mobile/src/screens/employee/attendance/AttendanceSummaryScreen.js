@@ -90,7 +90,7 @@ const AttendanceSummaryScreen = ({ navigation }) => {
                     return;
                 }
 
-                console.log('Fetching attendance from:', fromDate, 'to:', toDate);
+              //  console.log('Fetching attendance from:', fromDate, 'to:', toDate);
 
                 const data = await AttendanceService.getMySummary({
                     fromDate: fromDate,

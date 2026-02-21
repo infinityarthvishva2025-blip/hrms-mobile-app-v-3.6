@@ -27,17 +27,8 @@ const EmployeeDirectoryScreen = () => {
 
     const fetchEmployees = useCallback(async () => {
         try {
-            const response = await fetch('http://192.168.1.75:5000/api/employees', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch employees');
-            }
-
-            const data = await response.json();
+            const response = await api.get('/employees');
+            const data = response.data;
             setEmployees(data);
             setFilteredEmployees(data);
         } catch (error) {

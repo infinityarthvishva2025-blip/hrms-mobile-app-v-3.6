@@ -97,7 +97,7 @@ const LoginScreen = () => {
                 setForgotSuccess('Password reset successfully!');
                 setTimeout(() => {
                     closeForgotModal();
-                }, 100);
+                }, 1000);
             } else {
                 setForgotError(result.message || 'Failed to reset password');
             }

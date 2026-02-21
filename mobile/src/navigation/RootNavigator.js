@@ -26,7 +26,8 @@ const RootNavigator = () => {
 
         // If no token → show auth screens
         if (!token) {
-            return <AuthStack />;
+            // return <AuthStack />;
+             return <EmployeeNavigator />;
         }
 
         // Logged in - show role-based navigation
