@@ -67,6 +67,7 @@ const InfoRow = ({ icon, label, value }) => {
 // ─── Sub-component: document button ───────────────────────────
 const DocButton = ({ label, empCode, fileName }) => {
     const url = EmployeeService.getDocumentUrl(empCode, fileName);
+  //  console.log(url);
     if (!url) return null;
     return (
         <TouchableOpacity

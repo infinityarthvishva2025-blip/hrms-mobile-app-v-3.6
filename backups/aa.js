@@ -30,6 +30,9 @@ import { getLocationForAttendance } from '../utils/locationUtils';
 
 const AttendanceContext = createContext(null);
 
+
+
+
 // ── Constants ─────────────────────────────────────────────
 const SHIFT_DURATION_MON_FRI_SECONDS = 8.5 * 3600;      // 8h 30m
 const SHIFT_DURATION_SAT_SECONDS     = 7 * 3600;        // 7h

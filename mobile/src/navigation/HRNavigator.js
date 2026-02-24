@@ -5,6 +5,7 @@ import { View, StyleSheet, Platform, TouchableOpacity, Text } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// import { useAuth } from '../context/AuthContext'; // ✅ Added
 
 // HR Screens
 import DashboardScreen from '../screens/hr/DashboardScreen';
@@ -33,16 +34,19 @@ import PayrollScreen from '../screens/hr/payroll/PayrollScreen';
 import GurukulAdminScreen from '../screens/hr/gurukul/GurukulAdminScreen';
 import AnnouncementsScreen from '../screens/hr/announcements/AnnouncementsScreen';
 import ResignationScreen from '../screens/hr/resignation/ResignationScreen';
-import ReportsScreen from '../screens/hr/reports/ReportsScreen';
+// import ReportsScreen from '../screens/hr/reports/DailyReportInboxScreen';
 import SettingsScreen from '../screens/hr/SettingsScreen';
 import HolidaysScreen from '../screens/hr/holidays/HolidaysScreen';
 
 import theme from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
+import DailyReportInboxScreen from '../screens/hr/reports/DailyReportInboxScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Employees Stack Navigator
+
+// ================= EMPLOYEES STACK =================
 const EmployeesStack = () => (
     <Stack.Navigator
         screenOptions={{
@@ -57,7 +61,8 @@ const EmployeesStack = () => (
     </Stack.Navigator>
 );
 
-// Approvals Stack Navigator
+
+// ================= APPROVALS STACK =================
 const ApprovalsStack = () => (
     <Stack.Navigator
         screenOptions={{
@@ -73,7 +78,8 @@ const ApprovalsStack = () => (
     </Stack.Navigator>
 );
 
-// Attendance Stack Navigator
+
+// ================= ATTENDANCE STACK =================
 const AttendanceStack = () => (
     <Stack.Navigator
         screenOptions={{
@@ -89,28 +95,71 @@ const AttendanceStack = () => (
     </Stack.Navigator>
 );
 
-// More Stack Navigator
-const MoreStack = () => (
-    <Stack.Navigator
-        screenOptions={{
-            headerStyle: { backgroundColor: theme.colors.background },
-            headerTintColor: theme.colors.text,
-            headerTitleStyle: { fontWeight: '600' },
-        }}
-    >
-        <Stack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="LeaveManagementScreen" component={LeaveManagementScreen} options={{ title: 'Leave Management' }} />
-        <Stack.Screen name="PayrollScreen" component={PayrollScreen} options={{ title: 'Payroll' }} />
-        <Stack.Screen name="GurukulAdminScreen" component={GurukulAdminScreen} options={{ title: 'Gurukul Admin' }} />
-        <Stack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="HolidaysScreen" component={HolidaysScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="ResignationScreen" component={ResignationScreen} options={{ title: 'Resignation Requests' }} />
-        <Stack.Screen name="ReportsScreen" component={ReportsScreen} options={{ title: 'Reports' }} />
-        <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
-    </Stack.Navigator>
-);
 
-// Custom Tab Bar Component
+// ================= MORE STACK (ROLE BASED REPORTS) =================
+const MoreStack = ({ role }) => {
+    const normalizedRole = role?.toLowerCase();
+
+    const canViewReports =
+        normalizedRole === 'manager' ||
+        normalizedRole === 'gm';
+
+    return (
+        <Stack.Navigator
+            screenOptions={{
+                headerStyle: { backgroundColor: theme.colors.background },
+                headerTintColor: theme.colors.text,
+                headerTitleStyle: { fontWeight: '600' },
+            }}
+        >
+            <Stack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="LeaveManagementScreen" component={LeaveManagementScreen} options={{ title: 'Leave Management' }} />
+            <Stack.Screen name="PayrollScreen" component={PayrollScreen} options={{ title: 'Payroll' }} />
+            <Stack.Screen name="GurukulAdminScreen" component={GurukulAdminScreen} options={{ title: 'Gurukul Admin' }} />
+            <Stack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="HolidaysScreen" component={HolidaysScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ResignationScreen" component={ResignationScreen} options={{ title: 'Resignation Requests' }} />
+
+            {/* ✅ Only Manager & Director */}
+            <Stack.Screen
+                name="DailyReportInboxScreen"
+                component={DailyReportInboxScreen}
+                options={{ title: 'Daily Report Inbox' }}
+            />
+
+            <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
+        </Stack.Navigator>
+    );
+};
+
+
+// ================= MAIN HR NAVIGATOR =================
+const HRNavigator = () => {
+    const { role } = useAuth(); // ✅ Get role from context
+
+    return (
+        <Tab.Navigator
+            tabBar={props => <CustomTabBar {...props} />}
+            screenOptions={{
+                headerShown: false,
+                lazy: true,
+            }}
+        >
+            <Tab.Screen name="Home" component={DashboardScreen} />
+            <Tab.Screen name="Employees" component={EmployeesStack} />
+            <Tab.Screen name="Approvals" component={ApprovalsStack} />
+            <Tab.Screen name="Attendance" component={AttendanceStack} />
+
+            {/* Pass role to MoreStack */}
+            <Tab.Screen name="More">
+                {() => <MoreStack role={role} />}
+            </Tab.Screen>
+        </Tab.Navigator>
+    );
+};
+
+
+// ================= CUSTOM TAB BAR =================
 const CustomTabBar = ({ state, descriptors, navigation }) => {
     const insets = useSafeAreaInsets();
 
@@ -119,12 +168,11 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             <View style={[styles.tabBar, { paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12 }]}>
                 {state.routes.map((route, index) => {
                     const { options } = descriptors[route.key];
+
                     const label =
-                        options.tabBarLabel !== undefined
-                            ? options.tabBarLabel
-                            : options.title !== undefined
-                                ? options.title
-                                : route.name;
+                        options.tabBarLabel ??
+                        options.title ??
+                        route.name;
 
                     const isFocused = state.index === index;
 
@@ -140,7 +188,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                         }
                     };
 
-                    // Icon mapping
                     let iconName;
                     if (route.name === 'Home') iconName = isFocused ? 'home' : 'home-outline';
                     else if (route.name === 'Employees') iconName = isFocused ? 'people' : 'people-outline';
@@ -151,10 +198,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                     return (
                         <TouchableOpacity
                             key={index}
-                            accessibilityRole="button"
-                            accessibilityState={isFocused ? { selected: true } : {}}
-                            accessibilityLabel={options.tabBarAccessibilityLabel}
-                            testID={options.tabBarTestID}
                             onPress={onPress}
                             style={styles.tabItem}
                             activeOpacity={0.8}
@@ -183,24 +226,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
     );
 };
 
-// Main HR Navigator
-const HRNavigator = () => {
-    return (
-        <Tab.Navigator
-            tabBar={props => <CustomTabBar {...props} />}
-            screenOptions={{
-                headerShown: false,
-                lazy: true,
-            }}
-        >
-            <Tab.Screen name="Home" component={DashboardScreen} />
-            <Tab.Screen name="Employees" component={EmployeesStack} />
-            <Tab.Screen name="Approvals" component={ApprovalsStack} />
-            <Tab.Screen name="Attendance" component={AttendanceStack} />
-            <Tab.Screen name="More" component={MoreStack} />
-        </Tab.Navigator>
-    );
-};
 
 const styles = StyleSheet.create({
     tabBarContainer: {
@@ -235,7 +260,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: 24,
         gap: 8,
-        minWidth: 40,
     },
     inactiveTab: {
         alignItems: 'center',

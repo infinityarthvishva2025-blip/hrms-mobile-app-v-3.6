@@ -1,0 +1,420 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Add Employee</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        body {
+            background: #f4f6fb;
+        }
+
+        .card {
+            border-radius: 10px;
+        }
+
+        .img-thumbnail {
+            max-height: 120px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container py-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold text-primary">
+                <i class="fa-solid fa-user-plus me-2"></i> Add New Employee
+            </h3>
+            <a href="EmployeesList.html" class="btn btn-outline-primary">
+                <i class="fa-solid fa-list me-1"></i> See All Employees
+            </a>
+        </div>
+
+        <form id="employeeForm" enctype="multipart/form-data">
+
+            <div class="card shadow-sm border-0 p-4">
+
+                <!-- ================= BASIC DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Basic Details</h5>
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Employee Code</label>
+                        <input id="EmployeeCode" name="EmployeeCode" class="form-control" readonly />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Name</label>
+                        <input name="Name" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Email</label>
+                        <input name="Email" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Mobile Number</label>
+                        <input name="MobileNumber" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Alternate Mobile</label>
+                        <input name="AlternateMobileNumber" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Password</label>
+                        <input name="Password" type="password" class="form-control" required />
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= PERSONAL DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Personal Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-3">
+                        <label>Gender</label>
+                        <select name="Gender" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Father Name</label>
+                        <input name="FatherName" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Mother Name</label>
+                        <input name="MotherName" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>DOB</label>
+                        <input name="DOB_Date" type="date" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Marital Status</label>
+                        <select name="MaritalStatus" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            <option>Single</option>
+                            <option>Married</option>
+                            <option>Divorced</option>
+                            <option>Widowed</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Profile Photo</label>
+                        <input type="file" name="ProfilePhoto" class="form-control" />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label>Address</label>
+<textarea id="CurrentAddress" name="Address" class="form-control" rows="2" required></textarea>
+                    </div>
+
+                    <div class="col-md-12 mt-2">
+                        <input type="checkbox" id="SameAddressCheckbox" />
+                        <label>Permanent address same as current</label>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label>Permanent Address</label>
+<textarea id="PermanentAddress" name="PermanentAddress" class="form-control" rows="2"></textarea>
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= EXPERIENCE ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Experience Details</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label>Experience Type</label>
+                        <select id="ExperienceType" name="ExperienceType" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            <option>Fresher</option>
+                            <option>Experienced</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Total Experience Years</label>
+                        <input name="TotalExperienceYears" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Last Company Name</label>
+                        <input name="LastCompanyName" class="form-control" />
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= HEALTH ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Health Information</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label>Any Disease?</label>
+                        <select id="HasDisease" name="HasDisease" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option>No</option>
+                            <option>Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Disease Name</label>
+                        <input name="DiseaseName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Doctor Name</label>
+                        <input name="DoctorName" class="form-control" />
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= JOB DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Job Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Joining Date</label>
+                        <input name="JoiningDate" type="date" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Department</label>
+                        <select id="Department" name="Department" class="form-select" required>
+                            <option value="">-- Select --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Position</label>
+                        <select id="Position" name="Position" class="form-select" required>
+                            <option value="">-- Select Position --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Reporting Manager</label>
+                        <input name="ReportingManager" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Role</label>
+                        <select name="Role" class="form-select" required>
+                            <option>Intern</option>
+                            <option>Employee</option>
+                            <option>HR</option>
+                            <option>Manager</option>
+                            <option>GM</option>
+                            <option>VP</option>
+                            <option>Director</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Salary</label>
+                        <input name="Salary" class="form-control" required />
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= EDUCATION ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Education</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>12th %</label>
+                        <input name="HSCPercent" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Graduation</label>
+                        <input name="GraduationCourse" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Graduation %</label>
+                        <input name="GraduationPercent" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Post Graduation</label>
+                        <input name="PostGraduationCourse" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Post Graduation %</label>
+                        <input name="PostGraduationPercent" class="form-control" />
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= ID PROOFS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">ID Proofs</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Aadhaar</label>
+                        <input name="AadhaarNumber" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>PAN</label>
+                        <input name="PanNumber" class="form-control" required />
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= BANK DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Bank Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label>Account Holder Name</label>
+                        <input name="AccountHolderName" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Bank Name</label>
+                        <input name="BankName" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Account Number</label>
+                        <input name="AccountNumber" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>IFSC</label>
+                        <input name="IFSC" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Branch</label>
+                        <input name="Branch" class="form-control" required />
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- ================= EMERGENCY ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Emergency Contact</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Name</label>
+                        <input name="EmergencyContactName" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Relationship</label>
+                        <input name="EmergencyContactRelationship" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Mobile</label>
+                        <input name="EmergencyContactMobile" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label>Address</label>
+<textarea name="EmergencyContactAddress" class="form-control" rows="2" required></textarea>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success px-5">
+                    <i class="fa-solid fa-check me-1"></i> Save Employee
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        const API = "/api/employees";
+
+        // Load Employee Code
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch(`${API}/generate-code`)
+                .then(r => r.json())
+                .then(d => document.getElementById("EmployeeCode").value = d.employeeCode);
+        });
+
+        // Load Departments
+        fetch(`${API}/departments`)
+            .then(r => r.json())
+            .then(list => {
+                const dept = document.getElementById("Department");
+                list.forEach(d => dept.innerHTML += `<option>${d}</option>`);
+            });
+
+        // Load Positions
+        document.getElementById("Department").addEventListener("change", function () {
+            fetch(`${API}/positions?department=${this.value}`)
+                .then(r => r.json())
+                .then(list => {
+                    const pos = document.getElementById("Position");
+                    pos.innerHTML = '<option value="">-- Select Position --</option>';
+                    list.forEach(p => pos.innerHTML += `<option>${p}</option>`);
+                });
+        });
+
+        // Same Address
+        document.getElementById("SameAddressCheckbox").addEventListener("change", function () {
+            if (this.checked) {
+                document.getElementById("PermanentAddress").value = document.getElementById("CurrentAddress").value;
+            }
+        });
+
+        // Submit
+        document.getElementById("employeeForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const res = await fetch(API, { method: "POST", body: formData });
+            if (res.ok) { alert("Employee Created Successfully!"); }
+            else { alert("Error Creating Employee"); }
+        });
+    </script>
+
+</body>
+</html>

@@ -31,6 +31,8 @@ const AttendanceService = {
    * @param {{ latitude: number, longitude: number, accuracy: number }} payload
    * @returns {Promise<{ success: boolean }>}
    */
+
+  
   geoCheckIn: async ({ latitude, longitude, accuracy }) => {
     const response = await api.post('/attendance/geo-checkin', {
       latitude,
@@ -39,6 +41,12 @@ const AttendanceService = {
     });
     return response.data;
   },
+
+   getTodayAttendance :  async () => {
+  const response = await api.get('/attendance/today');
+  return response.data;
+}, 
+
 
   /**
    * Geo Check-Out — POST /api/attendance/geo-checkout

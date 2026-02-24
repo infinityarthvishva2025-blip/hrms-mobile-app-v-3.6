@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import theme from '../../../constants/theme';
 import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/api';
 
 const EmployeeDirectoryScreen = () => {
     const navigation = useNavigation();

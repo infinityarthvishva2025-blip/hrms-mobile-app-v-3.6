@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // HRMS API Base URL
-// const API_BASE_URL = 'http://192.168.1.75:5000/api';
+const API_BASE_URL = 'http://192.168.1.75:5000/api';
 
 
 // http://13.204.228.252/Api_hrms
@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // const API_BASE_URL = 'http://13.204.228.252/Api_hrms/api';
 
-const API_BASE_URL = 'https://hrms.infinityarthvishva.com/Api_hrms/api';
+// const API_BASE_URL = 'https://hrms.infinityarthvishva.com/Api_hrms/api';
 
 
 

@@ -6,7 +6,15 @@ import theme from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 
 const MoreMenuScreen = ({ navigation }) => {
-    const { user, logout } = useAuth();
+    const { user, logout, role } = useAuth();
+
+    const normalizedRole = role?.toLowerCase();
+
+    const canViewReports =
+        normalizedRole === 'manager' ||
+        normalizedRole === 'director' ||
+         normalizedRole === 'vp' ||
+          normalizedRole === 'gm' ; 
 
     const handleLogout = () => {
         Alert.alert(
@@ -43,10 +51,10 @@ const MoreMenuScreen = ({ navigation }) => {
             ]
         },
         {
-            title: 'Reports & Analytics',
-            items: [
-                { icon: 'stats-chart-outline', label: 'Reports', screen: 'ReportsScreen' },
-            ]
+            title: 'Daily Report Inbox',
+            items: canViewReports
+                ? [{ icon: 'stats-chart-outline', label: 'Daily Report Inbox', screen: 'DailyReportInboxScreen' }]
+                : []
         },
         {
             title: 'Settings',
@@ -54,10 +62,18 @@ const MoreMenuScreen = ({ navigation }) => {
                 { icon: 'settings-outline', label: 'Settings', screen: 'SettingsScreen' },
             ]
         },
+                {
+            title: 'Personal Reports',
+            items: [
+                { icon: 'documents', label: 'My Reports', screen: 'SettingsScreen' },
+            ]
+        },
     ];
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+            
+            {/* HEADER */}
             <View style={styles.headerContainer}>
                 <LinearGradient
                     colors={theme.colors.gradientHeader}
@@ -68,6 +84,7 @@ const MoreMenuScreen = ({ navigation }) => {
                     <View style={styles.headerContent}>
                         <View style={styles.headerTextContainer}>
                             <Text style={styles.headerTitle}>More</Text>
+
                             {user && (
                                 <View style={styles.profileInfo}>
                                     <View style={styles.badgeContainer}>
@@ -75,55 +92,62 @@ const MoreMenuScreen = ({ navigation }) => {
                                             colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
                                             style={styles.roleBadge}
                                         >
-                                            <Text style={styles.roleBadgeText}>HR ADMIN</Text>
+                                            <Text style={styles.roleBadgeText}>
+                                                {role?.toUpperCase()}
+                                            </Text>
                                         </LinearGradient>
                                     </View>
+
                                     <Text style={styles.userName}>{user.employeeName}</Text>
                                     <Text style={styles.userCode}>{user.employeeCode}</Text>
                                 </View>
                             )}
                         </View>
+
                         <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarText}>{user?.employeeName?.charAt(0) || 'U'}</Text>
+                            <Text style={styles.avatarText}>
+                                {user?.employeeName?.charAt(0) || 'U'}
+                            </Text>
                         </View>
                     </View>
                 </LinearGradient>
             </View>
 
+            {/* MENU */}
             <View style={styles.menuContainer}>
-                {menuItems.map((section, sectionIndex) => (
-                    <View key={sectionIndex} style={styles.section}>
-                        <Text style={styles.sectionTitle}>{section.title}</Text>
-                        <View style={styles.menuCard}>
-                            {section.items.map((item, itemIndex) => (
-                                <TouchableOpacity
-                                    key={itemIndex}
-                                    style={[
-                                        styles.menuItem,
-                                        itemIndex < section.items.length - 1 && styles.menuItemBorder
-                                    ]}
-                                    onPress={() => {
-                                        if (item.nested) {
-                                            navigation.navigate(item.nested, { screen: item.screen });
-                                        } else if (item.screen) {
-                                            navigation.navigate(item.screen);
-                                        }
-                                    }}
-                                    activeOpacity={0.7}
-                                >
-                                    <View style={styles.menuItemLeft}>
-                                        <View style={[styles.iconContainer, { backgroundColor: `${theme.colors.primary}15` }]}>
-                                            <Ionicons name={item.icon} size={22} color={theme.colors.primary} />
-                                        </View>
-                                        <Text style={styles.menuItemLabel}>{item.label}</Text>
-                                    </View>
-                                    <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                ))}
+                {menuItems.map((section, sectionIndex) => {
+                    if (section.items.length === 0) return null;
 
+                    return (
+                        <View key={sectionIndex} style={styles.section}>
+                            <Text style={styles.sectionTitle}>{section.title}</Text>
+
+                            <View style={styles.menuCard}>
+                                {section.items.map((item, itemIndex) => (
+                                    <TouchableOpacity
+                                        key={itemIndex}
+                                        style={[
+                                            styles.menuItem,
+                                            itemIndex < section.items.length - 1 && styles.menuItemBorder
+                                        ]}
+                                        onPress={() => navigation.navigate(item.screen)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.menuItemLeft}>
+                                            <View style={[styles.iconContainer, { backgroundColor: `${theme.colors.primary}15` }]}>
+                                                <Ionicons name={item.icon} size={22} color={theme.colors.primary} />
+                                            </View>
+                                            <Text style={styles.menuItemLabel}>{item.label}</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={18} color={theme.colors.textTertiary} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    );
+                })}
+
+                {/* LOGOUT */}
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
                     <LinearGradient
                         colors={['#FFE4E6', '#FECDD3']}
@@ -135,11 +159,13 @@ const MoreMenuScreen = ({ navigation }) => {
                         <Text style={styles.logoutText}>Logout</Text>
                     </LinearGradient>
                 </TouchableOpacity>
+
                 <Text style={styles.versionText}>Version 3.2.0</Text>
             </View>
         </ScrollView>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {

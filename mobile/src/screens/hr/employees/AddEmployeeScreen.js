@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
 import api from '../../../services/api';
+import { useAuth } from '../../../context/AuthContext';
 
 const SectionHeader = ({ title, expanded, onPress }) => (
     <TouchableOpacity style={styles.sectionHeader} onPress={onPress}>

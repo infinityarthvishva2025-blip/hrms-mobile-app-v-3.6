@@ -1,0 +1,476 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Edit Employee</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+
+    <style>
+        body {
+            background: #f4f6fb;
+        }
+
+        .card {
+            border-radius: 10px;
+        }
+
+        .img-thumbnail {
+            max-height: 120px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container py-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold text-primary">
+                <i class="fa-solid fa-user-pen me-2"></i> Edit Employee
+            </h3>
+            <a href="/Employees/My_Profile.html"  class="btn btn-outline-primary">
+                <i class="fa-solid fa-list me-1"></i> Back to List
+            </a>
+        </div>
+
+        <div id="successMsg" class="alert alert-success d-none"></div>
+
+        <form id="editForm" enctype="multipart/form-data">
+
+            <input type="hidden" id="Id">
+            <input type="hidden" id="EmployeeCode">
+
+            <div class="card shadow-sm border-0 p-4">
+
+                <!-- ================= BASIC DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Basic Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Employee Code</label>
+                        <input id="EmployeeCodeDisplay" class="form-control" readonly />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Full Name</label>
+                        <input id="Name" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Email</label>
+                        <input id="Email" type="email" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Mobile Number</label>
+                        <input id="MobileNumber" class="form-control"
+                               maxlength="10"
+                               pattern="^[6-9]\d{9}$"
+                               title="Enter valid 10-digit mobile number" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Alternate Mobile Number</label>
+                        <input id="AlternateMobileNumber"
+                               class="form-control"
+                               maxlength="10"
+                               pattern="^[6-9]\d{9}$"
+                               title="Enter valid 10-digit mobile number" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>New Password (optional)</label>
+                        <div class="input-group">
+                            <input id="Password" type="password" class="form-control" />
+                            <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('Password',this)">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Confirm Password</label>
+                        <div class="input-group">
+                            <input id="ConfirmPassword" type="password" class="form-control" onkeyup="checkPasswordMatch()" />
+                            <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('ConfirmPassword',this)">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </div>
+                        <span id="passwordError" class="text-danger"></span>
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= PERSONAL DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Personal Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-3">
+                        <label>Gender</label>
+                        <select id="Gender" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Father Name</label>
+                        <input id="FatherName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Mother Name</label>
+                        <input id="MotherName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Date of Birth</label>
+                        <input id="DOB_Date" type="date" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Marital Status</label>
+                        <select id="MaritalStatus" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option>Single</option>
+                            <option>Married</option>
+                            <option>Divorced</option>
+                            <option>Widowed</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Profile Photo</label>
+                        <img id="ProfilePreview" class="img-thumbnail mb-2 d-none" />
+                        <input type="file" id="ProfilePhoto" class="form-control" accept="image/*" />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label>Current Address</label>
+<textarea id="Address" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-md-12 mt-2">
+                        <input type="checkbox" id="SameAddressCheckbox" />
+                        <label>Permanent address same as current</label>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label>Permanent Address</label>
+<textarea id="PermanentAddress" class="form-control" rows="2"></textarea>
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= EXPERIENCE ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Experience Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Experience Type</label>
+                        <select id="ExperienceType" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option>Fresher</option>
+                            <option>Experienced</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Total Experience Years</label>
+                        <input id="TotalExperienceYears" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Last Company Name</label>
+                        <input id="LastCompanyName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-8">
+                        <label>Experience Certificates</label>
+                        <input type="file" id="ExperienceCertificateFiles" multiple class="form-control" />
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= HEALTH ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Health Information</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Any Pre-existing Disease?</label>
+                        <select id="HasDisease" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option>No</option>
+                            <option>Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Disease Name</label>
+                        <input id="DiseaseName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Disease Since</label>
+                        <input id="DiseaseSince" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Medicines Required</label>
+                        <input id="MedicinesRequired" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Doctor Name</label>
+                        <input id="DoctorName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Doctor Contact</label>
+                        <input id="DoctorContact" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Medical Document</label>
+                        <input type="file" id="MedicalDocumentFile" class="form-control" />
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= JOB DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Job Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Joining Date</label>
+                        <input id="JoiningDate" type="date" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Department</label>
+                        <select id="Department" class="form-select"></select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Position</label>
+                        <select id="Position" class="form-select"></select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Role</label>
+                        <select id="Role" class="form-select">
+                            <option>Intern</option>
+                            <option>Employee</option>
+                            <option>HR</option>
+                            <option>Manager</option>
+                            <option>GM</option>
+                            <option>VP</option>
+                            <option>Director</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Reporting Manager</label>
+                        <input id="ReportingManager" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Salary</label>
+                        <input id="Salary" type="number" class="form-control" />
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= EDUCATION ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Education</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>12th %</label>
+                        <input id="HSCPercent" type="number" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Graduation</label>
+                        <input id="GraduationCourse" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Graduation %</label>
+                        <input id="GraduationPercent" type="number" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Post Graduation</label>
+                        <input id="PostGraduationCourse" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Post Graduation %</label>
+                        <input id="PostGraduationPercent" type="number" class="form-control" />
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= ID PROOFS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">ID Proofs</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Aadhaar Number</label>
+                        <input id="AadhaarNumber" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Pan Number</label>
+                        <input id="PanNumber" class="form-control" />
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= BANK DETAILS ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Bank Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label>Account Holder Name</label>
+                        <input id="AccountHolderName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Bank Name</label>
+                        <input id="BankName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Account Number</label>
+                        <input id="AccountNumber" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>IFSC</label>
+                        <input id="IFSC" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Branch</label>
+                        <input id="Branch" class="form-control" />
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <!-- ================= EMERGENCY ================= -->
+                <h5 class="fw-bold text-secondary mb-3">Emergency Contact Details</h5>
+
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Contact Name</label>
+                        <input id="EmergencyContactName" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Relationship</label>
+                        <input id="EmergencyContactRelationship" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Mobile</label>
+                        <input id="EmergencyContactMobile" class="form-control" />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label>Address</label>
+<textarea id="EmergencyContactAddress" class="form-control"></textarea>
+                    </div>
+
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-success px-5">Save Changes</button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <script>
+
+        const API = "/api/employees";
+        const token = localStorage.getItem("token");
+
+        document.getElementById("editForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            const id = document.getElementById("Id").value;
+
+            const res = await fetch(`${API}/update/${id}`, {
+                method: "PUT",
+                headers: { Authorization: "Bearer " + token },
+                body: formData
+            });
+
+            if (res.ok) {
+                document.getElementById("successMsg").classList.remove("d-none");
+                document.getElementById("successMsg").innerText = "Employee updated successfully!";
+            } else {
+                alert("Update failed");
+            }
+        });
+
+        // password check
+        function checkPasswordMatch() {
+            const pwd = document.getElementById("Password").value;
+            const conf = document.getElementById("ConfirmPassword").value;
+            document.getElementById("passwordError").innerText =
+                pwd !== conf ? "Passwords do not match" : "";
+        }
+
+        // toggle
+        function togglePassword(id, btn) {
+            const input = document.getElementById(id);
+            if (input.type === "password") input.type = "text";
+            else input.type = "password";
+        }
+
+        // auto uppercase
+        document.addEventListener("input", function (e) {
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+                e.target.value = e.target.value.toUpperCase();
+            }
+        });
+
+    </script>
+
+</body>
+</html>

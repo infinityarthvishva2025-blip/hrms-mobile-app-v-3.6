@@ -26,20 +26,31 @@ const RootNavigator = () => {
 
         // If no token → show auth screens
         if (!token) {
-            // return <AuthStack />;
-             return <EmployeeNavigator />;
+            return <AuthStack />;
+            //  return <EmployeeNavigator />;
         }
 
         // Logged in - show role-based navigation
         if (role === 'Employee') {
             return <EmployeeNavigator />;
-        } else if (role === 'HR') {
-            return <HRNavigator />;
-        } else {
-            // Fallback to Employee if role is undefined
-            console.warn('Unknown role, defaulting to Employee navigation');
-            return <EmployeeNavigator />;
         }
+
+        // ✅ HR + Manager + Director use HRNavigator
+        if (
+            role === 'HR' ||
+            role === 'Manager' ||
+            role === 'Director' ||
+            role === "VP" ||
+            role === "GM"
+        ) {
+            return <HRNavigator />;
+        }
+
+        // Fallback
+        console.warn('Unknown role, defaulting to Employee navigation');
+        return <EmployeeNavigator />;
+
+
     };
 
     return (

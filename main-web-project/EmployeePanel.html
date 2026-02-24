@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attendance Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <!-- Bootstrap (modal only) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+
+    <div class="att-page">
+        <div class="att-container shadow-lg">
+
+            <!-- HEADER -->
+            <div class="att-header">
+                <div class="att-header-icon">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div>
+                    <h2 class="att-title">Attendance Panel</h2>
+                    <p class="att-subtitle">Track your work hours & check-in / check-out status</p>
+                </div>
+            </div>
+
+            <!-- MESSAGE -->
+            <div id="geoError" class="alert alert-danger text-center d-none mt-3"></div>
+
+            <!-- CONTENT -->
+            <div id="attendanceContent"></div>
+
+        </div>
+    </div>
+
+    <!-- GEO CHECKOUT MODAL -->
+    <div class="modal fade" id="geoCheckoutModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-modal">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="fa-solid fa-location-dot me-2"></i> Confirm Geo Checkout
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body text-center">
+                    <p class="fs-5 mb-3">
+                        Are you sure you want to <strong>Geo Check Out</strong>?
+                    </p>
+                </div>
+
+                <div class="modal-footer border-0 d-flex justify-content-between">
+                    <button class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-danger px-4" onclick="confirmGeoCheckout(this)">
+                        Yes, Check Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ================= CONFIG ================= */
+        const API_BASE = "/api/attendance";
+        let attendanceRecord = null;
+
+        /* ================= LOAD ================= */
+        document.addEventListener("DOMContentLoaded", loadAttendance);
+
+        function loadAttendance() {
+            fetch(API_BASE + "/today", { credentials: "include" })
+                .then(r => {
+                    if (!r.ok) throw "Unable to load attendance";
+                    return r.json();
+                })
+                .then(data => {
+                    attendanceRecord = data.record;
+                    renderAttendance();
+                })
+                .catch(() => showError("Unable to load attendance"));
+        }
+
+        /* ================= RENDER ================= */
+        function renderAttendance() {
+            const c = document.getElementById("attendanceContent");
+
+            if (!attendanceRecord || !attendanceRecord.inTime) {
+                c.innerHTML = `
+                <div class="text-center mt-4">
+                    <p>You haven't checked in yet today.</p>
+                    <button onclick="geoCheckIn()" class="att-btn att-btn-checkin">
+                        <i class="fa-solid fa-play me-2"></i> Geo Check In
+                    </button>
+                </div>`;
+                return;
+            }
+
+            let html = `
+            <div class="att-card mt-4">
+                <div class="att-entry">
+                    <i class="fa-solid fa-right-to-bracket text-success me-2"></i>
+                    <div>
+                        <div class="att-label">CHECK-IN TIME</div>
+                        <div class="att-value">${formatTime(attendanceRecord.inTime)}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+            if (!attendanceRecord.outTime) {
+                html += `
+                <div class="att-card mt-3">
+                    <div class="text-center">
+                        <i class="fa-solid fa-hourglass-half text-warning me-2"></i>
+                        Time Remaining (8-Hour 30-Minute shift)
+                        <div id="countdown" class="countdown-digits">00:00:00</div>
+                    </div>
+                </div>
+
+                <button class="att-btn att-btn-checkout mt-3"
+                        data-bs-toggle="modal"
+                        data-bs-target="#geoCheckoutModal">
+                    <i class="fa-solid fa-location-dot me-2"></i> Geo Check Out
+                </button>
+            `;
+            }
+
+            c.innerHTML = html;
+
+            if (!attendanceRecord.outTime) {
+                startCountdown(attendanceRecord.inTime);
+            }
+        }
+
+        /* ================= GEO CHECK-IN ================= */
+        function geoCheckIn() {
+            getLocation(pos => {
+                fetch(API_BASE + "/geo-checkin", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(pos)
+                })
+                    .then(async r => {
+                        if (r.ok) {
+                            loadAttendance();
+                            return;
+                        }
+
+                        // ✅ ALREADY CHECKED IN (409)
+                        if (r.status === 409) {
+                            const res = await r.json();
+                            showError(res.message || "Already checked in");
+
+                            // 🔥 SHOW MESSAGE + LOAD ATTENDANCE
+                            setTimeout(loadAttendance, 500);
+                            return;
+                        }
+
+                        const msg = await r.text();
+                        showError(msg);
+                    });
+            });
+        }
+
+        /* ================= GEO CHECK-OUT ================= */
+        function confirmGeoCheckout(btn) {
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            getLocation(pos => {
+                fetch(API_BASE + "/geo-checkout", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(pos)
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        bootstrap.Modal.getInstance(
+                            document.getElementById("geoCheckoutModal")
+                        ).hide();
+
+                        if (res.redirect) {
+                            window.location.href = res.redirect;
+                        } else {
+                            loadAttendance();
+                        }
+                    })
+                    .catch(() => showError("Checkout failed"));
+            });
+        }
+
+        /* ================= HELPERS ================= */
+        function getLocation(success) {
+            if (!navigator.geolocation) {
+                showError("Geolocation not supported");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                p => success({
+                    latitude: p.coords.latitude,
+                    longitude: p.coords.longitude
+                }),
+                () => showError("Location permission denied")
+            );
+        }
+
+        function startCountdown(inTime) {
+            const label = document.getElementById("countdown");
+
+            let today = new Date();
+            let shiftMinutes = (today.getDay() === 6) ? 420 : 510;
+
+            let start = new Date(today.toDateString() + " " + inTime);
+            let end = new Date(start.getTime() + shiftMinutes * 60000);
+
+            setInterval(() => {
+                let diff = end - new Date();
+                if (diff <= 0) {
+                    label.textContent = "00:00:00";
+                    return;
+                }
+                let h = Math.floor(diff / 3600000);
+                let m = Math.floor((diff % 3600000) / 60000);
+                let s = Math.floor((diff % 60000) / 1000);
+
+                label.textContent =
+                    h.toString().padStart(2, "0") + ":" +
+                    m.toString().padStart(2, "0") + ":" +
+                    s.toString().padStart(2, "0");
+            }, 1000);
+        }
+
+        function formatTime(time) {
+            return new Date(new Date().toDateString() + " " + time)
+                .toLocaleString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+        }
+
+        function showError(msg) {
+            const e = document.getElementById("geoError");
+            e.innerText = msg;
+            e.classList.remove("d-none");
+        }
+    </script>
+
+    <style>
+        .att-page {
+            display: flex;
+            justify-content: center;
+            padding: 25px
+        }
+
+        .att-container {
+            max-width: 760px;
+            width: 100%;
+            background: #fff;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.08)
+        }
+
+        .att-header {
+            display: flex;
+            gap: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee
+        }
+
+        .att-header-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: linear-gradient(135deg,#fde68a,#f97316);
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .att-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            max-width: 260px;
+            margin: auto;
+            padding: 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            color: white
+        }
+
+        .att-btn-checkin {
+            background: linear-gradient(135deg,#10b981,#059669)
+        }
+
+        .att-btn-checkout {
+            background: linear-gradient(135deg,#ef4444,#b91c1c)
+        }
+
+        .countdown-digits {
+            font-size: 36px;
+            font-weight: 900;
+            color: #ef4444
+        }
+    </style>
+
+</body>
+</html>
