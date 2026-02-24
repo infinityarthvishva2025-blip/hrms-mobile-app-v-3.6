@@ -1,3 +1,51 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+check whether the navigation is corret or not
+
+2) UPDATE THE UI FOR 
+
+
+api.js
+theme.js
+dont want to break existing functionlity
+
+
+DailyReportInboxScreen.JS
+
+GurukulAdminScreen.JS
+
+VideoPlayer.js
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 gurukul 
 
 i have shared gurukul-create.html my web code for your refrence 
