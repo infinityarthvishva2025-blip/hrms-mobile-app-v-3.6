@@ -123,7 +123,8 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
     return (
         <View style={styles.tabBarContainer}>
-            <View style={[styles.tabBar, { paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12 }]}>
+            {/* Use safe area bottom inset on all platforms, fallback to 12 if inset is 0 */}
+            <View style={[styles.tabBar, { paddingBottom: insets.bottom || 12 }]}>
                 {state.routes.map((route, index) => {
                     const { options } = descriptors[route.key];
                     const label =

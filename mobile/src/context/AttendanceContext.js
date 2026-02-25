@@ -326,9 +326,10 @@ export const AttendanceProvider = ({ children }) => {
 
       // API call
       await AttendanceService.geoCheckIn({
-        latitude: location.latitude,
-        longitude: location.longitude,
-        accuracy: location.accuracy,
+        currentLatitude: location.latitude,
+        currentLongitude: location.longitude,
+        currentCity: "Pune",
+        geoTags:[]
       });
 
       // Success – update state
@@ -368,9 +369,8 @@ export const AttendanceProvider = ({ children }) => {
       if (!location) throw new Error('Unable to fetch location for check‑out');
 
       await AttendanceService.geoCheckOut({
-        latitude: location.latitude,
-        longitude: location.longitude,
-        accuracy: location.accuracy,
+        currentLatitude: location.latitude,
+        currentLongitude: location.longitude,
       });
 
       const now = new Date();

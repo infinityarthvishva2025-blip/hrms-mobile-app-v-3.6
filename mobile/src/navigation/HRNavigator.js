@@ -165,7 +165,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 
     return (
         <View style={styles.tabBarContainer}>
-            <View style={[styles.tabBar, { paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12 }]}>
+            <View style={[styles.tabBar, { paddingBottom: insets.bottom || 12 }]}>
                 {state.routes.map((route, index) => {
                     const { options } = descriptors[route.key];
 

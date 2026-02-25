@@ -23,7 +23,7 @@ const LeaveService = {
    */
   getMyLeaves: async () => {
     try {
-      const response = await api.get('/Leave/my');
+      const response = await api.get('/Leave/MyLeaves');
       return response.data;
     } catch (error) {
       throw error;

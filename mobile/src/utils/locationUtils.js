@@ -51,17 +51,21 @@ const isMockLocation = (locationResult) => {
 };
 
 // ──────────────────────────────────────────────────────────
-// Location Fetching (with caching)
+// Location Fetching (with caching and accuracy checks)
 // ──────────────────────────────────────────────────────────
 export const getCurrentLocation = async (options = {}) => {
   const {
     useCache = true,
     maxAgeMs = LOCATION_CACHE_MAX_AGE,
-    timeoutMs = 10000, // reduced from 15000 for faster response
+    timeoutMs = 10000,
+    accuracyThreshold = null, // if provided, cached location must have accuracy ≤ threshold
   } = options;
 
+  // Check cache first if allowed
   if (useCache && lastLocation && Date.now() - lastLocationTimestamp < maxAgeMs) {
-    return lastLocation;
+    if (accuracyThreshold === null || lastLocation.accuracy <= accuracyThreshold) {
+      return lastLocation;
+    }
   }
 
   const granted = await requestLocationPermission();
@@ -110,7 +114,14 @@ export const getCurrentLocation = async (options = {}) => {
 // Strict Location for Attendance (Mock + Accuracy checks)
 // ──────────────────────────────────────────────────────────
 export const getLocationForAttendance = async () => {
-  const location = await getCurrentLocation({ useCache: false, timeoutMs: 10000 });
+  // First try cached location within last 5 seconds that meets accuracy
+  const location = await getCurrentLocation({
+    useCache: true,
+    maxAgeMs: 5000, // 5 seconds
+    accuracyThreshold: ACCURACY_THRESHOLD_METERS,
+    timeoutMs: 5000, // shorter timeout for fresh fetch if needed
+  });
+
   if (!location) return null;
 
   if (location.mocked) {

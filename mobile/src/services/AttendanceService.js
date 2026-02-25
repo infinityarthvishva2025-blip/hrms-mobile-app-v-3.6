@@ -33,11 +33,12 @@ const AttendanceService = {
    */
 
   
-  geoCheckIn: async ({ latitude, longitude, accuracy }) => {
+  geoCheckIn: async ({ currentLatitude, currentLongitude, currentCity , geoTags }) => {
     const response = await api.post('/attendance/geo-checkin', {
-      latitude,
-      longitude,
-      accuracy,
+      currentLatitude,
+      currentLongitude,
+      currentCity,
+      geoTags
     });
     return response.data;
   },
@@ -53,11 +54,10 @@ const AttendanceService = {
    * Server identifies the employee from the auth token.
    * @returns {Promise<{ success: boolean }>}
    */
-  geoCheckOut: async ({latitude , longitude , accuracy}) => {
+  geoCheckOut: async ({currentLatitude , currentLongitude}) => {
     const response = await api.post('/attendance/geo-checkout' ,{
-      latitude ,
-      longitude ,
-      accuracy
+      currentLatitude ,
+      currentLongitude 
     });
     return response.data;
   },
