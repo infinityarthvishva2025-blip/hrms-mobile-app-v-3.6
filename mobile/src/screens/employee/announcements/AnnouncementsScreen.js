@@ -13,24 +13,45 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import theme from '../../../constants/theme';
 import AnnouncementService from '../../../services/announcementService';
+import { useAuth } from '../../../context/AuthContext';
+// import { useAuth } from '../../../context/AuthContext'; // adjust path if needed
 
 const AnnouncementsScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
+    const { user } = useAuth(); // get current user from auth context
+    const currentUserId = user?.employeeId ? String(user.employeeId) : null; // ensure string for comparison
+
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [announcements, setAnnouncements] = useState([]);
 
+    // Helper: check if the current user has already read an announcement
+    const isReadByCurrentUser = useCallback((announcement) => {
+        if (!currentUserId || !announcement.readByEmployees) return false;
+        const readIds = announcement.readByEmployees.split(',').map(id => id.trim());
+        return readIds.includes(currentUserId);
+    }, [currentUserId]);
+
     const fetchAnnouncements = useCallback(async () => {
+        if (!currentUserId) return; // wait for user to load
+
         try {
             const response = await AnnouncementService.getMyAnnouncements();
-            const data =response.announcements
+            // response = { employeeId, announcements: [...] }
+            const allAnnouncements = response.announcements || [];
 
-            // Sort urgent first, then new
-            const sorted = data.sort((a, b) => {
+            // Filter out announcements already read by the current user
+            const unreadAnnouncements = allAnnouncements.filter(
+                ann => !isReadByCurrentUser(ann)
+            );
+
+            // Sort: urgent first, then by date (newest first)
+            const sorted = unreadAnnouncements.sort((a, b) => {
                 if (a.isUrgent && !b.isUrgent) return -1;
                 if (!a.isUrgent && b.isUrgent) return 1;
-                return new Date(b.createdAt) - new Date(a.createdAt);
+                return new Date(b.createdOn) - new Date(a.createdOn);
             });
+
             setAnnouncements(sorted);
         } catch (error) {
             console.error('Fetch announcements error:', error);
@@ -39,11 +60,14 @@ const AnnouncementsScreen = ({ navigation }) => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [currentUserId, isReadByCurrentUser]);
 
+    // Initial fetch and when user becomes available
     useEffect(() => {
-        fetchAnnouncements();
-    }, [fetchAnnouncements]);
+        if (currentUserId) {
+            fetchAnnouncements();
+        }
+    }, [currentUserId, fetchAnnouncements]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -51,13 +75,18 @@ const AnnouncementsScreen = ({ navigation }) => {
     }, [fetchAnnouncements]);
 
     const handleMarkAsRead = async (id) => {
+        // Optimistically remove the announcement
+        setAnnouncements(prev => prev.filter(item => item.id !== id));
+
         try {
             await AnnouncementService.markAsRead(id);
-            // Optimistically remove from list
-            setAnnouncements(prev => prev.filter(item => item.id !== id));
+            // No further action needed – the API updates the backend,
+            // and future fetches will filter it out automatically.
         } catch (error) {
             console.error('Mark read error:', error);
             Alert.alert('Error', 'Failed to mark as read');
+            // Optional: re-fetch to restore the item if the API call failed
+            // fetchAnnouncements();
         }
     };
 
@@ -70,7 +99,9 @@ const AnnouncementsScreen = ({ navigation }) => {
                     )}
                     <Text style={[styles.cardTitle, item.isUrgent && styles.urgentTitle]}>{item.title}</Text>
                 </View>
-                <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                <Text style={styles.dateText}>
+                    {new Date(item.createdOn).toLocaleDateString()} {/* fixed property name */}
+                </Text>
             </View>
 
             <Text style={styles.messageText}>{item.message}</Text>
@@ -167,7 +198,7 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.border,
     },
     urgentCard: {
-        backgroundColor: '#FEF2F2', // Red-50
+        backgroundColor: '#FEF2F2',
         borderColor: '#FCA5A5',
     },
     cardHeader: {

@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingHorizontal: 20,
-        marginTop: -50,
+        marginTop: -65,
     },
     welcomeContainer: {
         marginBottom: 24,
