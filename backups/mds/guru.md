@@ -1,8 +1,22 @@
 ------------------------------------------------> cahnges
 
-1) logo
+
+your first task is to deeply analyze and understand existing project 
+
+files and folder structure
+
+i want you to deeply analyze and study the files like\
+ 
+EmployeeNavigator.js
+HRNavigator.js
+RootNavigator.js
+
+make the navigation best of best 
 
 
+1) logo (logo6.png)
+
+use this as our main logo for our mobile app 
 1) proper navigation
 
 roles 
