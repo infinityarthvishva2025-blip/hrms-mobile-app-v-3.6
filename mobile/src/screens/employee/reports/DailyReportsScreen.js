@@ -12,9 +12,6 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../../services/api';
 import DatePickerInput from '../../../components/common/DatePickerInput';
 import theme from '../../../constants/theme';
-// import api from '../../../services/api'; // your configured axios instance
-// import theme from '../../../constants/theme';
-// import DatePickerInput from '../../../components/common/DatePickerInput'; // existing component
 
 // Helper to format ISO date to "DD MMM YYYY"
 const formatDisplayDate = (isoString) => {
@@ -40,16 +37,14 @@ const DailyReportsScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch reports when selectedDate changes (or on mount)
   useEffect(() => {
     fetchReports();
-  }, [selectedDate]); // refetch when date changes
+  }, [selectedDate]);
 
   const fetchReports = async () => {
     try {
       setLoading(true);
       setError(null);
-      // Use the provided API with selectedDate query param
       const response = await api.get('/DailyReportApi/mysent', {
         params: { selectedDate },
       });
@@ -63,7 +58,7 @@ const DailyReportsScreen = () => {
 
   const renderRecipients = (recipients) => {
     if (!recipients || recipients.length === 0) {
-      return <Text style={styles.placeholder}>No recipients</Text>;
+      return <Text style={styles.placeholderText}>No recipients</Text>;
     }
     return recipients.map((recipient, index) => (
       <View key={index} style={styles.recipientItem}>
@@ -71,8 +66,18 @@ const DailyReportsScreen = () => {
           <Text style={styles.recipientName}>{recipient.receiverName}</Text>
           <Text style={styles.recipientRole}>{recipient.receiverRole}</Text>
         </View>
-        <View style={[styles.readStatus, recipient.isRead ? styles.read : styles.unread]}>
-          <Text style={styles.readStatusText}>
+        <View
+          style={[
+            styles.readStatusBadge,
+            recipient.isRead ? styles.readBadge : styles.unreadBadge,
+          ]}
+        >
+          <Text
+            style={[
+              styles.readStatusText,
+              recipient.isRead ? styles.readText : styles.unreadText,
+            ]}
+          >
             {recipient.isRead ? 'Read' : 'Unread'}
           </Text>
         </View>
@@ -82,99 +87,93 @@ const DailyReportsScreen = () => {
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      {/* Premium Header */}
-      <View style={styles.dateContainer}>
-        <View style={styles.dateTag}>
-          <Ionicons name="calendar" size={14} color={theme.colors.primary} />
+      {/* Header with date and ID */}
+      <View style={styles.cardHeader}>
+        <View style={styles.dateChip}>
+          <Ionicons name="calendar-outline" size={14} color={theme.colors.primary} />
           <Text style={styles.dateText}>{formatDisplayDate(item.createdDate)}</Text>
         </View>
         <View style={styles.idChip}>
-          <Text style={styles.idChipText}>#{item.id}</Text>
+          <Text style={styles.idText}>#{item.id}</Text>
         </View>
       </View>
 
       {/* Today's Work */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Today's Outcome</Text>
+        <Text style={styles.sectionLabel}>Today's outcome</Text>
         <Text style={styles.sectionContent}>{item.todaysWork || 'Not reported'}</Text>
       </View>
 
       {/* Pending Work */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Pipeline / Pending</Text>
+        <Text style={styles.sectionLabel}>Pipeline / pending</Text>
         <Text style={styles.sectionContent}>{item.pendingWork || 'None'}</Text>
       </View>
 
       {/* Issues */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Blockers & Issues</Text>
+        <Text style={styles.sectionLabel}>Blockers & issues</Text>
         <Text style={styles.sectionContent}>{item.issues || 'No issues reported'}</Text>
       </View>
 
-      {/* Attachment */}
+      {/* Attachment (if any) */}
       {item.attachment ? (
         <View style={styles.attachmentContainer}>
-          <Ionicons name="document-attach" size={20} color={theme.colors.primary} />
-          <Text style={styles.attachmentText} numberOfLines={1}>{item.attachment}</Text>
-          <Ionicons name="chevron-forward" size={16} color={theme.colors.primary} />
+          <Ionicons name="attach-outline" size={18} color={theme.colors.primary} />
+          <Text style={styles.attachmentText} numberOfLines={1}>
+            {item.attachment}
+          </Text>
+          <Ionicons name="chevron-forward-outline" size={16} color={theme.colors.primary} />
         </View>
       ) : null}
 
-      {/* Recipients */}
-      <View style={styles.section}>
-        <View style={styles.recipientsBox}>
-          <Text style={styles.sectionLabel}>Tracking & Recipients</Text>
-          {renderRecipients(item.recipients)}
-        </View>
+      {/* Recipients section */}
+      <View style={styles.recipientsContainer}>
+        <Text style={styles.sectionLabel}>Tracking & recipients</Text>
+        {renderRecipients(item.recipients)}
       </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Premium Header/Filter Section */}
-      <View style={styles.headerCard}>
-        <View style={styles.filterRow}>
-          <View style={styles.filterIconBox}>
-            <Ionicons name="funnel-outline" size={20} color={theme.colors.primary} />
-          </View>
-          <View style={styles.filterContent}>
-            <DatePickerInput
-              label="Report Date"
-              value={selectedDate}
-              onChange={setSelectedDate}
-              maximumDate={new Date()}
-            />
-          </View>
-        </View>
+      {/* Header with date picker */}
+      <View style={styles.header}>
+        <DatePickerInput
+          label="Report date"
+          value={selectedDate}
+          onChange={setSelectedDate}
+          maximumDate={new Date()}
+          style={styles.datePicker}
+        />
       </View>
 
       {loading && (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Fetching reports...</Text>
+          <Text style={styles.loadingText}>Fetching reports…</Text>
         </View>
       )}
 
       {!loading && error && (
         <View style={styles.centerContainer}>
-          <View style={styles.errorCircle}>
+          <View style={styles.errorIconCircle}>
             <Ionicons name="alert-circle-outline" size={40} color={theme.colors.error} />
           </View>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchReports}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>Try again</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {!loading && !error && reports.length === 0 && (
         <View style={styles.centerContainer}>
-          <View style={styles.emptyCircle}>
+          <View style={styles.emptyIconCircle}>
             <Ionicons name="document-text-outline" size={48} color={theme.colors.textTertiary} />
           </View>
-          <Text style={styles.emptyTitle}>Empty Queue</Text>
-          <Text style={styles.emptyText}>No reports documented for this date</Text>
+          <Text style={styles.emptyTitle}>No reports</Text>
+          <Text style={styles.emptyMessage}>No reports documented for this date</Text>
         </View>
       )}
 
@@ -183,7 +182,7 @@ const DailyReportsScreen = () => {
           data={reports}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -194,239 +193,215 @@ const DailyReportsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC', // theme.colors.background
+    backgroundColor: theme.colors.background,
   },
-  headerCard: {
-    backgroundColor: '#FFF',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 4,
-    marginBottom: 8,
+  header: {
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.lg,
+    borderBottomLeftRadius: theme.borderRadius.xl,
+    borderBottomRightRadius: theme.borderRadius.xl,
+    ...theme.shadow.medium,
+    marginBottom: theme.spacing.xs,
   },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  datePicker: {
+    width: '100%',
   },
-  filterIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterContent: {
-    flex: 1,
-  },
-  listContainer: {
-    padding: 16,
-    paddingBottom: 32,
+  listContent: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
   card: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: theme.colors.border,
+    ...theme.shadow.light,
   },
-  dateContainer: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingBottom: 12,
+    marginBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
+    borderBottomColor: theme.colors.divider,
   },
-  dateTag: {
+  dateChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    backgroundColor: theme.colors.surfaceAlt,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
     gap: 6,
   },
   dateText: {
-    fontSize: 13,
-    color: '#475569',
-    fontWeight: '700',
+    ...theme.typography.captionSmall,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
   },
   idChip: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: theme.colors.surfaceAlt,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: theme.colors.border,
   },
-  idChipText: {
-    fontSize: 10,
-    color: '#3B82F6',
-    fontWeight: '800',
+  idText: {
+    ...theme.typography.captionSmall,
+    color: theme.colors.primary,
+    fontWeight: '700',
   },
   section: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    marginBottom: 6,
-    letterSpacing: 1,
+    ...theme.typography.label,
+    color: theme.colors.textTertiary,
+    marginBottom: theme.spacing.xs,
   },
   sectionContent: {
-    fontSize: 15,
-    color: '#1E293B',
+    ...theme.typography.body,
+    color: theme.colors.text,
     lineHeight: 22,
-    fontWeight: '500',
   },
   attachmentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-    padding: 12,
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
-    gap: 10,
+    backgroundColor: theme.colors.surfaceAlt,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.md,
     borderWidth: 1,
-    borderColor: '#E0F2FE',
+    borderColor: theme.colors.primaryLight,
+    gap: 8,
   },
   attachmentText: {
     flex: 1,
-    fontSize: 13,
-    color: '#0369A1',
-    fontWeight: '600',
+    ...theme.typography.bodySmall,
+    color: theme.colors.primary,
+    fontWeight: '500',
     textDecorationLine: 'underline',
   },
-  recipientsBox: {
-    marginTop: 8,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 12,
+  recipientsContainer: {
+    marginTop: theme.spacing.xs,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.sm,
   },
   recipientItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: theme.colors.divider,
   },
   recipientInfo: {
     flex: 1,
   },
   recipientName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E293B',
+    ...theme.typography.body,
+    fontWeight: '600',
+    color: theme.colors.text,
   },
   recipientRole: {
-    fontSize: 12,
-    color: '#64748B',
+    ...theme.typography.captionSmall,
+    color: theme.colors.textSecondary,
     marginTop: 2,
-    fontWeight: '500',
   },
-  readStatus: {
-    paddingHorizontal: 10,
+  readStatusBadge: {
+    paddingHorizontal: theme.spacing.sm,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: theme.borderRadius.round,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderWidth: 1,
   },
-  read: {
-    backgroundColor: '#DCFCE7',
+  readBadge: {
+    borderColor: theme.colors.success,
   },
-  unread: {
-    backgroundColor: '#FEF3C7',
+  unreadBadge: {
+    borderColor: theme.colors.warning,
   },
   readStatusText: {
-    fontSize: 10,
-    fontWeight: '800',
+    ...theme.typography.captionSmall,
+    fontWeight: '700',
     textTransform: 'uppercase',
+  },
+  readText: {
+    color: theme.colors.success,
+  },
+  unreadText: {
+    color: theme.colors.warning,
+  },
+  placeholderText: {
+    ...theme.typography.bodySmall,
+    color: theme.colors.textTertiary,
+    fontStyle: 'italic',
+    paddingVertical: theme.spacing.sm,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    paddingHorizontal: theme.spacing.xxl,
   },
   loadingText: {
-    marginTop: 16,
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
+    marginTop: theme.spacing.md,
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
   },
-  errorCircle: {
+  errorIconCircle: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: theme.colors.error + '10', // light red using opacity
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   errorText: {
-    color: '#991B1B',
-    fontSize: 16,
+    ...theme.typography.body,
+    color: theme.colors.error,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing.lg,
   },
   retryButton: {
-    backgroundColor: '#2076C7',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    shadowColor: '#2076C7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    ...theme.shadow.medium,
   },
   retryButtonText: {
-    color: '#FFF',
+    ...theme.typography.buttonSmall,
+    color: theme.colors.white,
     fontWeight: '700',
-    fontSize: 15,
   },
-  emptyCircle: {
+  emptyIconCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 8,
+    ...theme.typography.h5,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xs,
   },
-  emptyText: {
-    fontSize: 15,
-    color: '#94A3B8',
+  emptyMessage: {
+    ...theme.typography.body,
+    color: theme.colors.textTertiary,
     textAlign: 'center',
-    lineHeight: 22,
-  },
-  placeholder: {
-    fontSize: 14,
-    color: '#94A3B8',
-    fontStyle: 'italic',
   },
 });
 

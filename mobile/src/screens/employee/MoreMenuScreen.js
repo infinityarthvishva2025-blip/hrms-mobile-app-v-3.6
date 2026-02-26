@@ -6,7 +6,15 @@ import theme from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 
 const MoreMenuScreen = ({ navigation }) => {
-    const { user, logout } = useAuth();
+    const { user, logout , role } = useAuth();
+    const normalizedRole = role?.toLowerCase();
+
+    const canViewReports =
+        // normalizedRole === 'manager' ||
+        normalizedRole === 'director' ||
+        normalizedRole === 'vp' ||
+        normalizedRole === 'gm';
+
 
     const handleLogout = () => {
         Alert.alert(
@@ -25,27 +33,53 @@ const MoreMenuScreen = ({ navigation }) => {
         );
     };
 
-    const menuItems = [
-        {
-            title: 'Attendance & Leaves',
-            items: [
-                // { icon: 'time-outline', label: 'Regularization', screen: 'Regularization' },
-                { icon: 'time-outline', label: 'Daily Reports', screen: 'DailyReportsScreen' },
-                { icon: 'calendar-outline', label: 'Holidays', screen: 'Holidays' },
-                // { icon: 'wallet-outline', label: 'Leave Balance', screen: 'LeaveBalance' },
-                  { icon: 'wallet-outline', label: 'My Leaves', screen: 'LeaveBalance' },
-                { icon: 'stats-chart-outline', label: 'Attendance Summary', screen: 'AttendanceSummaryy' },
-            ]
-        },
-        {
-            title: 'Other',
-            items: [
-                { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
-                // { icon: 'exit-outline', label: 'Resignation', screen: 'ResignationScreen' },
-                { icon: 'document-text-outline', label: 'PaySlip', screen: 'PayslipsScreen' },
-            ]
-        },
-    ];
+
+
+    <Stack.Screen
+        name="DailyReportInboxScreen"
+        component={DailyReportInboxScreen}
+        options={{ title: 'Daily Report Inbox' }}
+    />
+
+
+const menuItems = [
+    {
+        title: 'Attendance & Leaves',
+        items: [
+            // { icon: 'time-outline', label: 'Regularization', screen: 'Regularization' },
+            { icon: 'time-outline', label: 'Daily Reports', screen: 'DailyReportsScreen' },
+            { icon: 'calendar-outline', label: 'Holidays', screen: 'Holidays' },
+            // { icon: 'wallet-outline', label: 'Leave Balance', screen: 'LeaveBalance' },
+            { icon: 'wallet-outline', label: 'My Leaves', screen: 'LeaveBalance' },
+            { icon: 'stats-chart-outline', label: 'Attendance Summary', screen: 'AttendanceSummaryy' },
+        ],
+    },
+
+    // 👇 Add this section ONLY if canViewReports is true
+    ...(canViewReports
+        ? [
+            {
+                title: 'Daily Report Inbox',
+                items: [
+                    {
+                        icon: 'stats-chart-outline',
+                        label: 'Daily Report Inbox',
+                        screen: 'DailyReportInboxScreen',
+                    },
+                ],
+            },
+        ]
+        : []),
+
+    {
+        title: 'Other',
+        items: [
+            { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
+            // { icon: 'exit-outline', label: 'Resignation', screen: 'ResignationScreen' },
+            { icon: 'document-text-outline', label: 'PaySlip', screen: 'PayslipsScreen' },
+        ],
+    },
+];
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>

@@ -38,6 +38,7 @@ import EditProfileScreen from '../screens/employee/EditProfileScreen';
 import theme from '../constants/theme';
 import AttSummary from '../screens/employee/attendance/attSummary';
 import MyLeavesScreen from '../screens/employee/leaves/MyLeavesScreen';
+import DailyReportInboxScreen from '../screens/hr/reports/DailyReportInboxScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -72,8 +73,8 @@ const LeavesStack = () => (
         <Stack.Screen name="LeaveBalance" component={MyLeavesScreen} options={{ headerShown: false }} />
         {/* HolidaysScreen has a custom header, so we hide the navigator header */}
         <Stack.Screen name="Holidays" component={HolidaysScreen} options={{ headerShown: false }} />
-        
-        
+
+
     </Stack.Navigator>
 );
 
@@ -98,7 +99,7 @@ const MoreStack = () => (
         <Stack.Screen name="Benefits" component={BenefitsScreen} options={{ title: 'Benefits' }} />
 
         <Stack.Screen name="ResignationScreen" component={ResignationScreen} options={{ title: 'Resignation' }} />
-        <Stack.Screen name="PayslipsScreen" component={PayslipsScreen}  options={{ headerShown: false }}/>
+        <Stack.Screen name="PayslipsScreen" component={PayslipsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="GurukulScreen" component={GurukulScreen} options={{ title: 'Gurukul' }} />
         <Stack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DailyReportsScreen" component={DailyReportsScreen} options={{ title: 'Daily Reports' }} />
@@ -110,9 +111,16 @@ const MoreStack = () => (
         {/* HolidaysScreen has a custom header, so we hide the navigator header here too */}
         <Stack.Screen name="Holidays" component={HolidaysScreen} options={{ headerShown: false }} />
         <Stack.Screen name="LeaveBalance" component={MyLeavesScreen} options={{ headerShown: false }} />
+                
+        <Stack.Screen
+            name="DailyReportInboxScreen"
+            component={DailyReportInboxScreen}
+            options={{ title: 'Daily Report Inbox' }}
+        />
 
         <Stack.Screen name="AttendanceSumamry" component={AttSummary} options={{ title: 'Attendance Summary' }} />
-       
+
+
         <Stack.Screen name="MyLeaves" component={MyLeavesScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
 );

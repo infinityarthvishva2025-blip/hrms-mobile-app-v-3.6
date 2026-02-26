@@ -11,10 +11,10 @@ const MoreMenuScreen = ({ navigation }) => {
     const normalizedRole = role?.toLowerCase();
 
     const canViewReports =
-        normalizedRole === 'manager' ||
+        // normalizedRole === 'manager' ||
         normalizedRole === 'director' ||
-         normalizedRole === 'vp' ||
-          normalizedRole === 'gm' ; 
+        normalizedRole === 'vp' ||
+        normalizedRole === 'gm';
 
     const handleLogout = () => {
         Alert.alert(
@@ -56,13 +56,32 @@ const MoreMenuScreen = ({ navigation }) => {
                 ? [{ icon: 'stats-chart-outline', label: 'Daily Report Inbox', screen: 'DailyReportInboxScreen' }]
                 : []
         },
+
+
         {
             title: 'Settings',
             items: [
                 { icon: 'settings-outline', label: 'Settings', screen: 'SettingsScreen' },
             ]
         },
-                {
+
+         {
+            title: 'Common',
+            items: [
+                { icon: 'settings-outline', label: 'MarkAttendanceScreen', screen: 'MarkAttendanceScreen' },
+                { icon: 'settings-outline', label: 'ApplyLeaveScreen', screen: 'ApplyLeaveScreen' },
+                 { icon: 'settings-outline', label: 'AttendanceSummaryScreen', screen: 'AttendanceSummaryScreen' },
+                  { icon: 'settings-outline', label: 'MyLeavesScreen', screen: 'MyLeavesScreen' },
+                   { icon: 'settings-outline', label: 'ProfileScreen', screen: 'ProfileScreen' },
+                    { icon: 'settings-outline', label: 'PayslipsScreen', screen: 'PayslipsScreen' },
+                    
+            ]
+        },
+
+
+
+
+        {
             title: 'Personal Reports',
             items: [
                 { icon: 'documents', label: 'My Reports', screen: 'SettingsScreen' },
@@ -72,7 +91,7 @@ const MoreMenuScreen = ({ navigation }) => {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-            
+
             {/* HEADER */}
             <View style={styles.headerContainer}>
                 <LinearGradient

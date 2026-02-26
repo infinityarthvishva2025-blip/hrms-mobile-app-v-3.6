@@ -1,7 +1,16 @@
 /**
  * AttendanceSummaryScreen.js
- * Premium attendance history screen with redesigned UI.
- * All original functionality preserved.
+ * ─────────────────────────────────────────────────────────
+ * Premium attendance history screen with date filtering,
+ * quick summary stats, and the existing table-based view.
+ *
+ * All existing functionality preserved:
+ *  • Date range filter (DatePickerInput + GradientButton)
+ *  • Pull-to-refresh
+ *  • AttendanceTable with correction request handling
+ *  • Loading / empty states
+ *  • useFocusEffect auto-refresh
+ * ─────────────────────────────────────────────────────────
  */
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,6 +18,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Platform,
     RefreshControl,
     ScrollView,
     StyleSheet,
@@ -21,10 +31,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AttendanceTable from '../../../components/common/AttendanceTable';
 import DatePickerInput from '../../../components/common/DatePickerInput';
+import GradientButton from '../../../components/common/GradientButton';
 import theme from '../../../constants/theme';
 import { useAuth } from '../../../context/AuthContext';
 import AttendanceService from '../../../services/AttendanceService';
 
+// ── Helpers ──
 const formatDateToString = (date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -32,79 +44,93 @@ const formatDateToString = (date) => {
     return `${y}-${m}-${d}`;
 };
 
-const AttendanceSummaryScreen = ({ navigation }) => {
+const att = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
+
+    // state 
 
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [attendanceData, setAttendanceData] = useState([]);
 
-    const [fromDate, setFromDate] = useState(
-        formatDateToString(new Date(Date.now() - 30 * 86400000)),
-    );
+    // default 30 days back to today
+
+    const [fromDate, setFromDate] = useState(formatDateToString(new Date(Date.now() - 30 * 8640000)));
     const [toDate, setToDate] = useState(formatDateToString(new Date()));
 
-    // Quick stats
-    // const stats = useMemo(() => {
-    //     if (!attendanceData.length) return { total: 0, present: 0, absent: 0, late: 0 };
-    //     const present = attendanceData.filter(
-    //         (r) => r.status?.toLowerCase() === 'present' || r.status?.toLowerCase() === 'p',
-    //     ).length;
-    //     const absent = attendanceData.filter(
-    //         (r) => r.status?.toLowerCase() === 'absent' || r.status?.toLowerCase() === 'a',
-    //     ).length;
-    //     const late = attendanceData.filter(
-    //         (r) => r.status?.toLowerCase() === 'late' || r.status?.toLowerCase() === 'l',
-    //     ).length;
-    //     return { total: attendanceData.length, present, absent, late };
-    // }, [attendanceData]);
-
-    const fetchAttendanceSummary = useCallback(
+    // data fetching (unchanged logic) -->
+    const fetchAttendanceSummary = useCallback((
         async (isRefresh = false) => {
-            if (!isRefresh) setLoading(true);
+            if (!refreshing) {
+                setLoading(true);
+            }
             try {
                 if (!fromDate || !toDate) {
-                    Alert.alert('Validation', 'Please select both from and to dates');
+                    Alert.alert("Validation", 'Please select both from and to dates');
+                    setLoading(false);
                     return;
-                }
+                };
                 if (new Date(fromDate) > new Date(toDate)) {
-                    Alert.alert('Validation', 'From date cannot be after To date');
+                    Alert.alert("Validation", "From date can not be after to date");
+                    setLoading(false)
                     return;
+                };
+                const data = await AttendanceService.getMySummary({
+                    fromDate: fromDate, toDate: toDate
+                });
+                if (data && data.records) {
+                    setAttendanceData(data.records);
+                } else {
+                    setAttendanceData([]);
                 }
 
-                const data = await AttendanceService.getMySummary({
-                    fromDate,
-                    toDate,
-                });
-
-                setAttendanceData(data?.records || []);
             } catch (error) {
-                console.error('Fetch summary error:', error);
+                console.error("Fetch sumamry error", error);
                 Alert.alert(
                     'Error',
                     error.response?.data?.message || 'Failed to fetch attendance summary',
                 );
                 setAttendanceData([]);
+
             } finally {
                 setLoading(false);
                 setRefreshing(false);
             }
-        },
-        [fromDate, toDate],
-    );
+        }, [fromDate, toDate]
+    ));
 
     useFocusEffect(
         useCallback(() => {
             fetchAttendanceSummary();
-        }, [fetchAttendanceSummary]),
+        }, [fetchAttendanceSummary])
     );
 
-    const onRefresh = () => {
+    const onRefresh = ()=>{
         setRefreshing(true);
         fetchAttendanceSummary(true);
-    };
+    }
+    // corr ection handler (uncahnged)
 
+    const handleCorrectionRequest = (record)=>{
+        if (!record.token) {
+            Alert.alert("Not Allowed" , "Correction request is not availabe for this record");
+            return;
+        };
+        if (record.correctionStatus === 'Pending') {
+            Alert.alert("Already Approved" , "A correctionrequest is already pending for this record");
+            return;
+        }
+        if (record.correctionStatus == 'Approved') {
+            Alert.alert("Already approved" , "COrrection has already been approved for this record");
+            return;
+        }
+    }
+}
+
+const AttendanceSummaryScreen = ({ navigation }) => {
+
+    // ── Correction Handler (unchanged) ──
     const handleCorrectionRequest = (record) => {
         if (!record.token) {
             Alert.alert('Not Allowed', 'Correction request is not available for this record');
@@ -118,23 +144,40 @@ const AttendanceSummaryScreen = ({ navigation }) => {
             Alert.alert('Already Approved', 'Correction has already been approved for this record');
             return;
         }
-        if (record.status === 'A' || record.status === 'WO') {
-            Alert.alert('Cannot request', `You were ${record.status === 'A' ? 'absent' : 'on a weekly off'}`);
+        if (record.status === 'A') {
+            Alert.alert('cant send the request', 'you were absent');
+            return;
+        }
+        if (record.status === 'WO') {
+            Alert.alert('cant send the request', 'It was a weekly off');
+            return;
+        }
+        if (record.status === 'WO') {
+            Alert.alert('Already Approved', 'Correction has already been approved for this record');
             return;
         }
         navigation.navigate('Regularization', { attendanceRecord: record });
     };
 
+    // ── Render ──
     return (
         <View style={styles.container}>
+            {/* ═══════════════════════════════════════
+                GRADIENT HEADER
+            ═══════════════════════════════════════ */}
             <LinearGradient
                 colors={theme.colors.gradientHeader}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
             >
+                {/* Top Bar */}
                 <View style={styles.headerRow}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
+                        style={styles.backBtn}
+                        activeOpacity={0.7}
+                    >
                         <Ionicons name="arrow-back" size={22} color="#FFF" />
                     </TouchableOpacity>
                     <View style={styles.headerTextBlock}>
@@ -143,12 +186,16 @@ const AttendanceSummaryScreen = ({ navigation }) => {
                             {user?.employeeName || 'Employee'} • {user?.employeeCode || ''}
                         </Text>
                     </View>
-                    <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <TouchableOpacity
+                        onPress={onRefresh}
+                        style={styles.refreshBtn}
+                        activeOpacity={0.7}
+                    >
                         <Ionicons name="refresh" size={20} color="#FFF" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Quick Stats Bar
+                {/* ── Quick Stats Bar ──
                 <View style={styles.statsBar}>
                     <StatPill label="Total" value={stats.total} color="#FFF" />
                     <View style={styles.statDivider} />
@@ -160,14 +207,19 @@ const AttendanceSummaryScreen = ({ navigation }) => {
                 </View> */}
             </LinearGradient>
 
+            {/* ═══════════════════════════════════════
+                CONTENT
+            ═══════════════════════════════════════ */}
             <View style={styles.contentWrapper}>
+                {/* ── Date Filter Card (overlapping header) ── */}
+
                 <View style={[styles.filterCard, theme.shadow.medium]}>
-                    {/* <View style={styles.filterHeader}>
+                    <View style={styles.filterHeader}>
                         <View style={styles.filterIconWrap}>
                             <Ionicons name="funnel" size={16} color={theme.colors.primary} />
                         </View>
                         <Text style={styles.filterTitle}>Date Range</Text>
-                    </View> */}
+                    </View>
 
                     <View style={styles.filterRow}>
                         <View style={styles.dateInputWrap}>
@@ -190,24 +242,16 @@ const AttendanceSummaryScreen = ({ navigation }) => {
                             />
                         </View>
                     </View>
-{/* 
-                    <TouchableOpacity
-                        style={styles.applyButton}
+
+                    {/* <GradientButton
+                        title="Apply Filter"
                         onPress={() => fetchAttendanceSummary()}
-                        activeOpacity={0.8}
-                    >
-                        <LinearGradient
-                            colors={[theme.colors.primary, theme.colors.primaryDark]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.applyGradient}
-                        >
-                            <Ionicons name="search" size={16} color="#FFF" />
-                            <Text style={styles.applyText}>Apply</Text>
-                        </LinearGradient>
-                    </TouchableOpacity> */}
+                        icon={<Ionicons name="search" size={16} color="#FFF" />}
+                        style={styles.filterBtn}
+                    /> */}
                 </View>
 
+                {/* ── Scrollable Table Area ── */}
                 <ScrollView
                     style={styles.scrollArea}
                     contentContainerStyle={styles.scrollContent}
@@ -241,12 +285,15 @@ const AttendanceSummaryScreen = ({ navigation }) => {
                         </View>
                     ) : (
                         <View style={styles.tableWrap}>
+                            {/* Record count badge */}
                             <View style={styles.recordCountRow}>
                                 <Ionicons name="list" size={14} color={theme.colors.textSecondary} />
                                 <Text style={styles.recordCountText}>
                                     {attendanceData.length} record{attendanceData.length !== 1 ? 's' : ''} found
                                 </Text>
                             </View>
+
+                            {/* Existing AttendanceTable — UNTOUCHED */}
                             <AttendanceTable
                                 data={attendanceData}
                                 onRequestCorrection={handleCorrectionRequest}
@@ -260,6 +307,7 @@ const AttendanceSummaryScreen = ({ navigation }) => {
     );
 };
 
+// ── Stat Pill Component ──
 const StatPill = ({ label, value, color }) => (
     <View style={styles.statPill}>
         <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -267,32 +315,37 @@ const StatPill = ({ label, value, color }) => (
     </View>
 );
 
+// ─────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
     },
+
+    // ── Header ──
     headerGradient: {
         paddingHorizontal: 20,
-        paddingBottom: 30,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+        paddingBottom: 48,
+        borderBottomLeftRadius: 40,
+        borderBottomRightRadius: 40,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 16,
-        elevation: 8,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 10,
     },
     backBtn: {
         width: 44,
         height: 44,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -302,29 +355,31 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 22,
-        fontWeight: '700',
+        fontWeight: '800',
         color: '#FFF',
         letterSpacing: -0.5,
     },
     headerSub: {
         fontSize: 13,
-        color: 'rgba(255,255,255,0.9)',
+        color: 'rgba(255,255,255,0.85)',
         marginTop: 4,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     refreshBtn: {
         width: 44,
         height: 44,
         borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.15)',
         alignItems: 'center',
         justifyContent: 'center',
     },
+
+    // ── Stats Bar ──
     statsBar: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: 'rgba(255,255,255,0.12)',
         borderRadius: 20,
-        paddingVertical: 12,
+        paddingVertical: 14,
         paddingHorizontal: 8,
         alignItems: 'center',
         justifyContent: 'space-around',
@@ -336,46 +391,51 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     statValue: {
-        fontSize: 20,
-        fontWeight: '800',
+        fontSize: 18,
+        fontWeight: '900',
         fontVariant: ['tabular-nums'],
         letterSpacing: -0.5,
     },
     statLabel: {
-        fontSize: 10,
-        fontWeight: '600',
-        color: 'rgba(255,255,255,0.8)',
-        marginTop: 2,
+        fontSize: 9,
+        fontWeight: '800',
+        color: 'rgba(255,255,255,0.7)',
+        marginTop: 4,
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        letterSpacing: 1.2,
     },
     statDivider: {
         width: 1,
         height: 24,
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.15)',
     },
+
+    // ── Content ──
     contentWrapper: {
         flex: 1,
-        marginTop: -45,
-        paddingHorizontal: 10,
+        marginTop: -32,
+        paddingHorizontal: 16,
     },
+
+    // ── Filter Card ──
     filterCard: {
         backgroundColor: '#FFF',
         borderRadius: 24,
-        padding: 5,
-        marginBottom: 1-0,
+        padding: 2,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: '#F1F5F9',
         shadowColor: '#0F172A',
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-        elevation: 5,
+        shadowOpacity: 0.05,
+        shadowRadius: 20,
+        elevation: 6,
     },
     filterHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 16,
+        gap: 10,
     },
     filterIconWrap: {
         width: 32,
@@ -384,46 +444,38 @@ const styles = StyleSheet.create({
         backgroundColor: '#EFF6FF',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 10,
     },
     filterTitle: {
         fontSize: 14,
-        fontWeight: '700',
+        fontWeight: '800',
         color: '#1E293B',
-        letterSpacing: 0.3,
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
     },
     filterRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 4,
+        justifyContent: 'space-between',
+        marginBottom: 18,
     },
     dateInputWrap: {
         flex: 1,
     },
     filterArrow: {
         paddingHorizontal: 10,
+        justifyContent: 'center',
     },
-    applyButton: {
+    filterBtn: {
         borderRadius: 16,
-        overflow: 'hidden',
+        height: 52,
         shadowColor: theme.colors.primary,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
     },
-    applyGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 14,
-        gap: 8,
-    },
-    applyText: {
-        color: '#FFF',
-        fontSize: 15,
-        fontWeight: '600',
-    },
+
+    // ── Scroll / Table ──
     scrollArea: {
         flex: 1,
     },
@@ -442,10 +494,12 @@ const styles = StyleSheet.create({
     },
     recordCountText: {
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#64748B',
         letterSpacing: 0.3,
     },
+
+    // ── Loading ──
     loaderWrap: {
         alignItems: 'center',
         paddingVertical: 60,
@@ -470,6 +524,8 @@ const styles = StyleSheet.create({
         marginTop: 6,
         fontWeight: '500',
     },
+
+    // ── Empty State ──
     emptyWrap: {
         alignItems: 'center',
         padding: 40,
@@ -495,7 +551,7 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         fontSize: 18,
-        fontWeight: '700',
+        fontWeight: '800',
         color: '#1E293B',
         marginBottom: 8,
     },

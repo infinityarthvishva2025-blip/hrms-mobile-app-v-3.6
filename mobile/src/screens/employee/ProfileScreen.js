@@ -67,7 +67,6 @@ const InfoRow = ({ icon, label, value }) => {
 // ─── Sub-component: document button ───────────────────────────
 const DocButton = ({ label, empCode, fileName }) => {
     const url = EmployeeService.getDocumentUrl(empCode, fileName);
-  //  console.log(url);
     if (!url) return null;
     return (
         <TouchableOpacity
@@ -158,69 +157,6 @@ const ProfileScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-
-            {/* ── Gradient Header ── */}
-
-            
-            <View style={styles.headerBgContainer}>
-                <LinearGradient
-                    colors={theme.colors.gradientHeader}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={[styles.headerGradient, { paddingTop: insets.top + 10 }]}
-                >
-                    {/* Top bar */}
-                    <View style={styles.headerTop}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                            <Ionicons name="arrow-back" size={24} color="#FFF" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitleText}>Employee Profile</Text>
-                        {/* Edit button */}
-                        <TouchableOpacity
-                            style={styles.editButton}
-                            onPress={() => navigation.navigate('EditProfile', { employeeId: emp.id })}
-                        >
-                            <Ionicons name="create" size={22} color="#FFF" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Avatar + name */}
-                    <View style={styles.heroContent}>
-                        <View style={styles.avatarContainer}>
-                            <View style={styles.avatarRing}>
-                                {photoUrl && !photoError ? (
-                                    <Image
-                                        source={{ uri: photoUrl }}
-                                        style={styles.avatarPhoto}
-                                        onError={() => setPhotoError(true)}
-                                    />
-                                ) : (
-                                    <View style={styles.avatarImage}>
-                                        <Text style={styles.avatarInitial}>{initials}</Text>
-                                    </View>
-                                )}
-                            </View>
-                        </View>
-                        <Text style={styles.heroName}>{emp.name}</Text>
-                        <Text style={styles.heroRole}>{emp.position || emp.role || 'Professional'}</Text>
-
-                        <View style={styles.idChip}>
-                            <Text style={styles.idText}>{emp.employeeCode}</Text>
-                        </View>
-
-                        {/* Status */}
-                        <View style={[styles.statusPill,
-                        { backgroundColor: emp.status === 'Active' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)' }]}>
-                            <Text style={[styles.statusPillText,
-                            { color: emp.status === 'Active' ? '#4ADE80' : '#FCA5A5' }]}>
-                                {emp.status || 'Unknown'}
-                            </Text>
-                        </View>
-                    </View>
-                </LinearGradient>
-            </View>
-
-            {/* ── Scrollable Content ── */}
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -228,8 +164,62 @@ const ProfileScreen = ({ navigation }) => {
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />
                 }
             >
+                {/* ── Banner with theme gradient ── */}
+                <LinearGradient
+                    colors={theme.colors.gradientHeader}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.banner, { paddingTop: insets.top }]}
+                >
+                    <View style={styles.headerTop}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                            <Ionicons name="arrow-back" size={24} color="#FFF" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.editButton}
+                            onPress={() => navigation.navigate('EditProfile', { employeeId: emp.id })}
+                        >
+                            <Ionicons name="create" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                    </View>
+                </LinearGradient>
 
-                {/* 1. Basic / Personal */}
+                {/* ── Profile Header Card (overlaps banner) ── */}
+                <View style={styles.profileHeaderCard}>
+                    <View style={styles.avatarWrapper}>
+                        <View style={styles.avatarRing}>
+                            {photoUrl && !photoError ? (
+                                <Image
+                                    source={{ uri: photoUrl }}
+                                    style={styles.avatarPhoto}
+                                    onError={() => setPhotoError(true)}
+                                />
+                            ) : (
+                                <View style={styles.avatarImage}>
+                                    <Text style={styles.avatarInitial}>{initials}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                    <View style={styles.profileInfo}>
+                        <Text style={styles.profileName}>{emp.name}</Text>
+                        <Text style={styles.profileRole}>{emp.position || emp.role || 'Professional'}</Text>
+                        <View style={styles.profileMetaRow}>
+                            <View style={styles.idChip}>
+                                <Text style={styles.idText}>{emp.employeeCode}</Text>
+                            </View>
+                            <View style={[styles.statusPill,
+                                { backgroundColor: emp.status === 'Active' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }]}>
+                                <Text style={[styles.statusPillText,
+                                    { color: emp.status === 'Active' ? '#16A34A' : '#DC2626' }]}>
+                                    {emp.status || 'Unknown'}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                {/* ── 1. Basic / Personal ── */}
                 <SectionCard title="Personal Information" icon="person-outline">
                     <InfoRow icon="mail-outline" label="Email" value={emp.email} />
                     <InfoRow icon="call-outline" label="Mobile" value={emp.mobileNumber} />
@@ -241,13 +231,13 @@ const ProfileScreen = ({ navigation }) => {
                     <InfoRow icon="person-outline" label="Mother's Name" value={emp.motherName} />
                 </SectionCard>
 
-                {/* 2. Address */}
+                {/* ── 2. Address ── */}
                 <SectionCard title="Address" icon="location-outline">
                     <InfoRow icon="home-outline" label="Current Address" value={emp.address} />
                     <InfoRow icon="home-outline" label="Permanent Address" value={emp.permanentAddress} />
                 </SectionCard>
 
-                {/* 3. Job Details */}
+                {/* ── 3. Job Details ── */}
                 <SectionCard title="Job Details" icon="briefcase-outline">
                     <InfoRow icon="calendar-outline" label="Joining Date" value={formatDate(emp.joiningDate)} />
                     <InfoRow icon="business-outline" label="Department" value={emp.department} />
@@ -270,7 +260,7 @@ const ProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </SectionCard>
 
-                {/* 4. Education */}
+                {/* ── 4. Education ── */}
                 <SectionCard title="Education" icon="school-outline">
                     <InfoRow icon="document-text-outline" label="12th Percentage" value={emp.hscPercent ? `${emp.hscPercent}%` : null} />
                     <InfoRow icon="document-text-outline" label="Graduation" value={
@@ -286,7 +276,7 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </SectionCard>
 
-                {/* 5. ID Proofs */}
+                {/* ── 5. ID Proofs ── */}
                 <SectionCard title="ID Proofs" icon="card-outline">
                     <InfoRow icon="finger-print-outline" label="Aadhaar Number" value={emp.aadhaarNumber} />
                     <InfoRow icon="card-outline" label="PAN Number" value={emp.panNumber} />
@@ -296,7 +286,7 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </SectionCard>
 
-                {/* 6. Bank Details */}
+                {/* ── 6. Bank Details ── */}
                 <SectionCard title="Bank Details" icon="wallet-outline">
                     <InfoRow icon="person-circle-outline" label="Account Holder" value={emp.accountHolderName} />
                     <InfoRow icon="business-outline" label="Bank Name" value={emp.bankName} />
@@ -308,7 +298,7 @@ const ProfileScreen = ({ navigation }) => {
                     </View>
                 </SectionCard>
 
-                {/* 7. Emergency Contact */}
+                {/* ── 7. Emergency Contact ── */}
                 <SectionCard title="Emergency Contact" icon="medkit-outline">
                     <InfoRow icon="person-outline" label="Name" value={emp.emergencyContactName} />
                     <InfoRow icon="people-outline" label="Relationship" value={emp.emergencyContactRelationship} />
@@ -316,7 +306,7 @@ const ProfileScreen = ({ navigation }) => {
                     <InfoRow icon="home-outline" label="Address" value={emp.emergencyContactAddress} />
                 </SectionCard>
 
-                {/* 8. Health */}
+                {/* ── 8. Health ── */}
                 <SectionCard title="Health Information" icon="fitness-outline">
                     <InfoRow icon="medkit-outline" label="Pre-existing Disease?" value={emp.hasDisease} />
                     {emp.hasDisease === 'Yes' && <>
@@ -355,24 +345,15 @@ const styles = StyleSheet.create({
     retryBtn: { paddingHorizontal: 32, paddingVertical: 12, backgroundColor: theme.colors.primary, borderRadius: 12 },
     retryBtnText: { color: '#FFF', fontWeight: '700' },
 
-    // Header
-    headerBgContainer: {
-       // height: 280, 
-
-        overflow: 'hidden',
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
-        backgroundColor: theme.colors.primary,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 8,
+    // Banner
+    banner: {
+        height: 140,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
     },
-    headerGradient: { paddingBottom: 32 },
     headerTop: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, marginBottom: 20,
+        paddingHorizontal: 20,
     },
     backButton: {
         width: 44, height: 44, borderRadius: 14,
@@ -382,40 +363,82 @@ const styles = StyleSheet.create({
         width: 44, height: 44, borderRadius: 14,
         backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center',
     },
-    headerTitleText: { fontSize: 18, fontWeight: '800', color: '#FFF', letterSpacing: 0.5 },
-    heroContent: { alignItems: 'center' },
-    avatarContainer: { marginBottom: 16 },
-    avatarRing: {
-        width: 110, height: 110, borderRadius: 55, padding: 6,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
+
+    // Profile header card (overlaps banner)
+    profileHeaderCard: {
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        marginHorizontal: 16,
+        marginTop: -40,
+        padding: 16,
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 20,
+        elevation: 6,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
-    avatarPhoto: { width: '100%', height: '100%', borderRadius: 55 },
+    avatarWrapper: {
+        marginRight: 16,
+    },
+    avatarRing: {
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        padding: 4,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    avatarPhoto: { width: '100%', height: '100%', borderRadius: 45 },
     avatarImage: {
-        flex: 1, borderRadius: 55, backgroundColor: '#FFF',
+        flex: 1, borderRadius: 45, backgroundColor: '#EFF6FF',
         alignItems: 'center', justifyContent: 'center',
     },
-    avatarInitial: { fontSize: 40, fontWeight: '900', color: theme.colors.primary },
-    heroName: { fontSize: 24, fontWeight: '800', color: '#FFF', marginBottom: 6, letterSpacing: -0.5 },
-    heroRole: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginBottom: 12, fontWeight: '500' },
-    idChip: {
-        paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100,
-        backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)', marginBottom: 12,
+    avatarInitial: { fontSize: 34, fontWeight: '900', color: theme.colors.primary },
+    profileInfo: {
+        flex: 1,
+        justifyContent: 'center',
     },
-    idText: { fontSize: 13, fontWeight: '700', color: '#FFF', letterSpacing: 1 },
-    statusPill: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100 },
+    profileName: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#0F172A',
+        marginBottom: 4,
+        letterSpacing: -0.5,
+    },
+    profileRole: {
+        fontSize: 14,
+        color: '#475569',
+        fontWeight: '500',
+        marginBottom: 8,
+    },
+    profileMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    idChip: {
+        paddingHorizontal: 14,
+        paddingVertical: 4,
+        borderRadius: 100,
+        backgroundColor: '#F1F5F9',
+    },
+    idText: { fontSize: 12, fontWeight: '700', color: '#334155', letterSpacing: 0.5 },
+    statusPill: { paddingHorizontal: 14, paddingVertical: 4, borderRadius: 100 },
     statusPillText: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
 
     // Content
-    scrollContent: { padding: 16, paddingTop: 20, paddingBottom: 40 },
+    scrollContent: { paddingTop: 0, paddingBottom: 40 },
 
-    // Section Card
+    // Section Card (unchanged)
     sectionCard: {
-        backgroundColor: '#FFF', borderRadius: 24, marginBottom: 20,
+        backgroundColor: '#FFF', borderRadius: 24, marginHorizontal: 16, marginBottom: 20,
         overflow: 'hidden', borderWidth: 1, borderColor: '#F1F5F9',
         shadowColor: '#0F172A', shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.04, shadowRadius: 12, elevation: 4,
@@ -432,7 +455,7 @@ const styles = StyleSheet.create({
     sectionTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B', letterSpacing: 0.3 },
     sectionBody: { padding: 20 },
 
-    // Info Row
+    // Info Row (unchanged)
     infoRow: { flexDirection: 'row', marginBottom: 18 },
     infoIconBox: { width: 32, alignItems: 'center', marginRight: 12, paddingTop: 4 },
     infoContent: { flex: 1, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 12 },
@@ -442,7 +465,7 @@ const styles = StyleSheet.create({
     },
     infoValue: { fontSize: 15, fontWeight: '600', color: '#1E293B', lineHeight: 22 },
 
-    // Document buttons
+    // Document buttons (unchanged)
     docRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
     docBtn: {
         flexDirection: 'row', alignItems: 'center', gap: 6,

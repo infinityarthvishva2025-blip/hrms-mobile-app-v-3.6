@@ -38,7 +38,6 @@ const RootNavigator = () => {
         // ✅ HR + Manager + Director use HRNavigator
         if (
             role === 'HR' ||
-            role === 'Manager' ||
             role === 'Director' ||
             role === "VP" ||
             role === "GM"

@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // import { useAuth } from '../context/AuthContext'; // ✅ Added
 
 // HR Screens
-import DashboardScreen from '../screens/hr/DashboardScreen';
+import DashboardScreen from '../screens/employee/DashboardScreen';
 import MoreMenuScreen from '../screens/hr/MoreMenuScreen';
 
 // Employee Stack Screens
@@ -41,6 +41,12 @@ import HolidaysScreen from '../screens/hr/holidays/HolidaysScreen';
 import theme from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 import DailyReportInboxScreen from '../screens/hr/reports/DailyReportInboxScreen';
+import MarkAttendanceScreen from '../screens/employee/attendance/MarkAttendanceScreen';
+import AttendanceSummaryScreen from '../screens/employee/attendance/AttendanceSummaryScreen';
+import ProfileScreen from '../screens/employee/ProfileScreen';
+import PayslipsScreen from '../screens/employee/profile/PayslipsScreen';
+import MyLeavesScreen from '../screens/employee/leaves/MyLeavesScreen';
+import ApplyLeaveScreen from '../screens/employee/leaves/ApplyLeaveScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -120,6 +126,16 @@ const MoreStack = ({ role }) => {
             <Stack.Screen name="HolidaysScreen" component={HolidaysScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResignationScreen" component={ResignationScreen} options={{ title: 'Resignation Requests' }} />
 
+             <Stack.Screen name="MarkAttendanceScreen" component={MarkAttendanceScreen} options={{ title: 'MarkAttendanceScreen' }} />
+
+              <Stack.Screen name="MyLeavesScreen" component={MyLeavesScreen} options={{ title: 'MyLeavesScreen' }} />
+               <Stack.Screen name="ApplyLeaveScreen" component={ApplyLeaveScreen} options={{ title: 'ApplyLeaveScreen' }} />
+               <Stack.Screen name="AttendanceSummaryScreen" component={AttendanceSummaryScreen} options={{ title: 'AttendanceSummaryScreen' }} />
+                <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ title: 'ProfileScreen' }} />
+                 <Stack.Screen name="PayslipsScreen" component={PayslipsScreen} options={{ title: 'PayslipsScreen' }} />
+
+
+   
             {/* ✅ Only Manager & Director */}
             <Stack.Screen
                 name="DailyReportInboxScreen"
@@ -148,7 +164,7 @@ const HRNavigator = () => {
             <Tab.Screen name="Home" component={DashboardScreen} />
             <Tab.Screen name="Employees" component={EmployeesStack} />
             <Tab.Screen name="Approvals" component={ApprovalsStack} />
-            <Tab.Screen name="Attendance" component={AttendanceStack} />
+            {/* <Tab.Screen name="Attendance" component={AttendanceStack} /> */}
 
             {/* Pass role to MoreStack */}
             <Tab.Screen name="More">
@@ -192,7 +208,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                     if (route.name === 'Home') iconName = isFocused ? 'home' : 'home-outline';
                     else if (route.name === 'Employees') iconName = isFocused ? 'people' : 'people-outline';
                     else if (route.name === 'Approvals') iconName = isFocused ? 'checkmark-done' : 'checkmark-done-outline';
-                    else if (route.name === 'Attendance') iconName = isFocused ? 'time' : 'time-outline';
+                    // else if (route.name === 'Attendance') iconName = isFocused ? 'time' : 'time-outline';
                     else if (route.name === 'More') iconName = isFocused ? 'menu' : 'menu-outline';
 
                     return (
