@@ -1,18 +1,18 @@
 /**
  * ApplyLeaveScreen.js
  * ─────────────────────────────────────────────────────────
- * Best-in-class Apply Leave form with intuitive UX.
- *
- * Preserved Logic:
- *  • Categories: Full Day, Half Day, Early Going, Late Coming
- *  • Date validation (Start <= End)
- *  • Time input (HH:MM regex) for partial days
- *  • Auto-set end date on start change
- *  • API submission via LeaveService
- *  • Loading states & Alert feedback
+ * Enhanced Apply Leave screen matching web UI with Comp Off support.
+ * Now uses centralized api.js instead of external leaveService.
+ * Features:
+ *   - Category dropdown (Full Day, More Than 1 Day, Half Day, Early Going, Late Coming)
+ *   - Conditional fields based on category
+ *   - Leave Type dropdown (Sick, Casual, Comp-Off) for full/multi day
+ *   - Comp-Off date dropdown (fetched from API) when Comp-Off is selected
+ *   - Comp-Off balance display
+ *   - All original leave types fully functional
  * ─────────────────────────────────────────────────────────
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -23,148 +23,308 @@ import {
     Alert,
     Platform,
     KeyboardAvoidingView,
+    Modal,
+    FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 import theme from '../../../constants/theme';
-import LeaveService from '../../../services/employee/leaveService';
 import { useAuth } from '../../../context/AuthContext';
 import GradientButton from '../../../components/common/GradientButton';
+import api from '../../../services/api';
+// import api from '../../../services/api'; // 👈 use centralized API client
+
+// API endpoints (adjust if your backend uses different paths)
+const COMP_OFF_DETAILS_URL = '/Leave/Create';
+const APPLY_LEAVE_URL = '/Leave/Create';
 
 const ApplyLeaveScreen = ({ navigation }) => {
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
 
-    // ── State ──
+    // ── Core State ──
     const [loading, setLoading] = useState(false);
-    const [category, setCategory] = useState(0); // 0=FullDay, 1=HalfDay, 2=EarlyGoing, 3=LateComing
-    const [leaveType, setLeaveType] = useState('FullDay');
+    const [category, setCategory] = useState(0); // 0=Full Day, 1=More Than 1 Day, 2=Half Day, 3=Early Going, 4=Late Coming
+    const [leaveType, setLeaveType] = useState(''); // 'Sick', 'Casual', 'coff'
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState(new Date());
+    const [halfDayDate, setHalfDayDate] = useState(new Date());
+    const [halfDaySession, setHalfDaySession] = useState(''); // 'FirstHalf', 'SecondHalf'
+    const [timeDate, setTimeDate] = useState(new Date());
     const [timeValue, setTimeValue] = useState('');
     const [reason, setReason] = useState('');
 
-    // Date Pickers
-    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    // ── Comp Off State ──
+    const [compOffBalance, setCompOffBalance] = useState(0);
+    const [compOffDates, setCompOffDates] = useState([]); // Array of Date objects
+    const [selectedCompOffDate, setSelectedCompOffDate] = useState(null);
+    const [showCompOffModal, setShowCompOffModal] = useState(false);
+    const [loadingCompOff, setLoadingCompOff] = useState(false);
 
-    // Categories Configuration
-    const categories = [
-        { id: 0, label: 'Full Day', value: 'FullDay', icon: 'sunny-outline' },
-        { id: 1, label: 'Half Day', value: 'HalfDay', icon: 'partly-sunny-outline' },
-        { id: 2, label: 'Early Going', value: 'EarlyGoing', icon: 'log-out-outline' },
-        { id: 3, label: 'Late Coming', value: 'LateComing', icon: 'time-outline' },
+    // Date Pickers visibility
+    const [showStartPicker, setShowStartPicker] = useState(false);
+    const [showEndPicker, setShowEndPicker] = useState(false);
+    const [showHalfDayPicker, setShowHalfDayPicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+
+    // ── Category options (match web values) ──
+    const categoryOptions = [
+        { label: 'Full Day', value: 0 },
+        { label: 'More Than 1 Day', value: 1 },
+        { label: 'Half Day', value: 2 },
+        { label: 'Early Going', value: 3 },
+        { label: 'Late Coming', value: 4 },
     ];
 
-    // ── Handlers ──
-    const handleCategorySelect = (cat) => {
-        setCategory(cat.id);
-        setLeaveType(cat.value);
+    // Leave type options (only for Full Day / More Than 1 Day)
+    const leaveTypeOptions = [
+        { label: 'Sick', value: 'Sick' },
+        { label: 'Casual', value: 'Casual' },
+        { label: 'Comp-Off', value: 'coff' },
+    ];
+
+    // Session options for Half Day
+    const sessionOptions = [
+        { label: 'First Half', value: 'FirstHalf' },
+        { label: 'Second Half', value: 'SecondHalf' },
+    ];
+
+    // ── Fetch Comp Off Details on Mount ──
+    useEffect(() => {
+        fetchCompOffData();
+    }, []);
+
+    const fetchCompOffData = async () => {
+        setLoadingCompOff(true);
+        try {
+            const response = await api.get(COMP_OFF_DETAILS_URL);
+            // Defensive access – if response structure differs, adjust accordingly
+            const data = response.data || {};
+            setCompOffBalance(data.compOffBalance || 0);
+            const dates = (data.compOffDates || []).map(dateStr => {
+                const d = new Date(dateStr);
+                return isNaN(d.getTime()) ? null : d;
+            }).filter(d => d !== null);
+            setCompOffDates(dates);
+        } catch (error) {
+            console.error('Error fetching comp off details:', error);
+            // Non‑blocking – user can still apply for other leave types
+        } finally {
+            setLoadingCompOff(false);
+        }
     };
 
-    const handleStartDateChange = (event, selectedDate) => {
-        setShowStartDatePicker(false);
+    // ── Handlers (memoized with useCallback) ──
+    const handleCategoryChange = useCallback((itemValue) => {
+        setCategory(Number(itemValue));
+        // Reset dependent fields
+        setLeaveType('');
+        setSelectedCompOffDate(null);
+        setHalfDaySession('');
+        setTimeValue('');
+    }, []);
+
+    const handleLeaveTypeChange = useCallback((itemValue) => {
+        setLeaveType(itemValue);
+        if (itemValue !== 'coff') {
+            setSelectedCompOffDate(null);
+        }
+    }, []);
+
+    const handleSelectCompOffDate = useCallback((date) => {
+        setSelectedCompOffDate(date);
+        setShowCompOffModal(false);
+    }, []);
+
+    // Safe date conversion for API
+    const toISODate = (date) => {
+        if (!(date instanceof Date) || isNaN(date.getTime())) {
+            return new Date().toISOString().split('T')[0]; // fallback to today
+        }
+        return date.toISOString().split('T')[0];
+    };
+
+    const handleStartDateChange = useCallback((event, selectedDate) => {
+        setShowStartPicker(false);
         if (selectedDate) {
             setStartDate(selectedDate);
-            // Auto-adjust end date if needed
             if (selectedDate > endDate) {
                 setEndDate(selectedDate);
             }
         }
-    };
+    }, [endDate]);
 
-    const handleEndDateChange = (event, selectedDate) => {
-        setShowEndDatePicker(false);
-        if (selectedDate) {
-            setEndDate(selectedDate);
-        }
-    };
+    const handleEndDateChange = useCallback((event, selectedDate) => {
+        setShowEndPicker(false);
+        if (selectedDate) setEndDate(selectedDate);
+    }, []);
 
-    const validateForm = () => {
+    const handleHalfDayDateChange = useCallback((event, selectedDate) => {
+        setShowHalfDayPicker(false);
+        if (selectedDate) setHalfDayDate(selectedDate);
+    }, []);
+
+    const handleTimeDateChange = useCallback((event, selectedDate) => {
+        setShowTimePicker(false);
+        if (selectedDate) setTimeDate(selectedDate);
+    }, []);
+
+    // ── Validation ──
+    const validateForm = useCallback(() => {
         if (!reason.trim()) {
             Alert.alert('Missing Detail', 'Please enter a reason for your leave.');
             return false;
         }
 
-        // Time validation for partial leaves
-        if (category === 2 || category === 3) {
-            if (!timeValue.trim()) {
-                Alert.alert('Missing Time', `Please enter the time for ${leaveType.replace(/([A-Z])/g, ' $1').trim()}.`);
-                return false;
-            }
-            const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-            if (!timeRegex.test(timeValue)) {
-                Alert.alert('Invalid Time', 'Please enter time in HH:MM format (e.g., 14:30).');
-                return false;
-            }
-        }
+        switch (category) {
+            case 0: // Full Day
+            case 1: // More Than 1 Day
+                if (!leaveType) {
+                    Alert.alert('Missing Leave Type', 'Please select a leave type.');
+                    return false;
+                }
+                if (leaveType === 'coff' && !selectedCompOffDate) {
+                    Alert.alert('Missing Comp-Off Date', 'Please select a comp-off earned date.');
+                    return false;
+                }
+                if (category === 1 && endDate < startDate) {
+                    Alert.alert('Invalid Dates', 'End date cannot be before start date.');
+                    return false;
+                }
+                break;
 
-        if (endDate < startDate) {
-            Alert.alert('Invalid Dates', 'End date cannot be before start date.');
-            return false;
+            case 2: // Half Day
+                if (!halfDaySession) {
+                    Alert.alert('Missing Session', 'Please select a session for half day.');
+                    return false;
+                }
+                break;
+
+            case 3: // Early Going
+            case 4: // Late Coming
+                if (!timeValue.trim()) {
+                    Alert.alert('Missing Time', `Please enter the time for ${category === 3 ? 'Early Going' : 'Late Coming'}.`);
+                    return false;
+                }
+                const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+                if (!timeRegex.test(timeValue)) {
+                    Alert.alert('Invalid Time', 'Please enter time in HH:MM format (e.g., 14:30).');
+                    return false;
+                }
+                break;
+
+            default:
+                break;
         }
 
         return true;
-    };
+    }, [category, leaveType, selectedCompOffDate, endDate, startDate, halfDaySession, timeValue, reason]);
 
-    const handleSubmit = async () => {
+    // ── Submit ──
+    const handleSubmit = useCallback(async () => {
         if (!validateForm()) return;
 
         setLoading(true);
         try {
+            // Build base payload
             const leaveData = {
                 category: category,
-                leaveType: leaveType,
-                startDate: startDate.toISOString().split('T')[0],
-                endDate: endDate.toISOString().split('T')[0],
-                timeValue: (category === 2 || category === 3) ? timeValue : null,
                 reason: reason.trim(),
             };
 
-            const response = await LeaveService.applyLeave(leaveData);
+            // Add fields based on category (use safe date conversion)
+            if (category === 0 || category === 1) {
+                leaveData.leaveType = leaveType;
+                leaveData.startDate = toISODate(startDate);
+                leaveData.endDate = toISODate(endDate);
+                if (leaveType === 'coff' && selectedCompOffDate) {
+                    leaveData.isCompOff = true;
+                    leaveData.workDate = toISODate(selectedCompOffDate);
+                }
+            } else if (category === 2) {
+                leaveData.leaveType = 'HalfDay';
+                leaveData.startDate = toISODate(halfDayDate);
+                leaveData.endDate = toISODate(halfDayDate); // same day
+                leaveData.halfDaySession = halfDaySession;
+            } else if (category === 3) {
+                leaveData.leaveType = 'EarlyGoing';
+                leaveData.startDate = toISODate(timeDate);
+                leaveData.endDate = toISODate(timeDate);
+                leaveData.timeValue = timeValue;
+            } else if (category === 4) {
+                leaveData.leaveType = 'LateComing';
+                leaveData.startDate = toISODate(timeDate);
+                leaveData.endDate = toISODate(timeDate);
+                leaveData.timeValue = timeValue;
+            }
+
+            const response = await api.post(APPLY_LEAVE_URL, leaveData);
+            const message = response.data?.message || 'Your leave request has been sent for approval.';
 
             Alert.alert(
                 'Application Submitted',
-                response.message || 'Your leave request has been sent for approval.',
+                message,
                 [
                     {
                         text: 'Done',
                         onPress: () => {
-                            // Reset & Navigate
+                            // Reset form
                             setCategory(0);
-                            setLeaveType('FullDay');
+                            setLeaveType('');
                             setStartDate(new Date());
                             setEndDate(new Date());
+                            setHalfDayDate(new Date());
+                            setHalfDaySession('');
+                            setTimeDate(new Date());
                             setTimeValue('');
                             setReason('');
-                            // navigation.navigate('MyLeavesScreen');
-
-
-                            // navigation.navigate('More', { screen: 'MyLeavesScreen', initial: false });
+                            setSelectedCompOffDate(null);
+                            fetchCompOffData(); // Refresh balance
                         },
                     },
                 ]
             );
         } catch (error) {
             console.error('Apply leave error:', error);
-            Alert.alert(
-                'Submission Failed',
-                error.response?.data?.message || 'Something went wrong. Please try again.'
-            );
+            const errorMsg = error.response?.data?.message || 'Something went wrong. Please try again.';
+            Alert.alert('Submission Failed', errorMsg);
         } finally {
             setLoading(false);
         }
-    };
+    }, [
+        category, reason, leaveType, startDate, endDate, selectedCompOffDate,
+        halfDayDate, halfDaySession, timeDate, timeValue, validateForm
+    ]);
 
-    // Calculate duration for display
-    const durationDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    // Helper to format date for display
+    const formatDate = useCallback((date) => {
+        if (!(date instanceof Date) || isNaN(date.getTime())) return 'Invalid date';
+        return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    }, []);
 
-    // ── Render ──
+    // Modal list item renderer (memoized to avoid recreating)
+    const renderCompOffItem = useCallback(({ item }) => (
+        <TouchableOpacity
+            style={styles.modalItem}
+            onPress={() => handleSelectCompOffDate(item)}
+        >
+            <Ionicons name="calendar" size={18} color={theme.colors.primary} />
+            <Text style={styles.modalItemText}>
+                {formatDate(item)}
+            </Text>
+        </TouchableOpacity>
+    ), [handleSelectCompOffDate, formatDate]);
+
     return (
         <View style={styles.container}>
-            {/* ══ Gradient Header ══ */}
+            {/* Header */}
             <LinearGradient
                 colors={theme.colors.gradientHeader}
                 start={{ x: 0, y: 0 }}
@@ -172,13 +332,6 @@ const ApplyLeaveScreen = ({ navigation }) => {
                 style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}
             >
                 <View style={styles.headerRow}>
-                    {/* <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        style={styles.backBtn}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    </TouchableOpacity> */}
                     <View style={styles.headerTextContainer}>
                         <Text style={styles.headerTitle}>Apply Leave</Text>
                         <Text style={styles.headerSub}>Request time off</Text>
@@ -202,124 +355,208 @@ const ApplyLeaveScreen = ({ navigation }) => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* 1. Leave Category */}
-                    <Text style={styles.sectionTitle}>Select Leave Type</Text>
-                    <View style={styles.categoryGrid}>
-                        {categories.map((cat) => (
-                            <TouchableOpacity
-                                key={cat.id}
-                                style={[
-                                    styles.catCard,
-                                    category === cat.id && styles.catCardActive,
-                                ]}
-                                onPress={() => handleCategorySelect(cat)}
-                                activeOpacity={0.8}
+                    {/* Category Dropdown */}
+                    <View style={styles.formGroup}>
+                        <Text style={styles.fieldLabel}>Leave Category</Text>
+                        <View style={styles.pickerWrapper}>
+                            <Picker
+                                selectedValue={category}
+                                onValueChange={handleCategoryChange}
+                                style={styles.picker}
+                                dropdownIconColor={theme.colors.primary}
                             >
-                                <View
-                                    style={[
-                                        styles.catIcon,
-                                        category === cat.id ? styles.catIconActive : styles.catIconInactive,
-                                    ]}
+                                {categoryOptions.map(opt => (
+                                    <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+                                ))}
+                            </Picker>
+                        </View>
+                    </View>
+
+                    {/* Conditional Fields based on Category */}
+                    {(category === 0 || category === 1) && (
+                        <>
+                            {/* Leave Type Dropdown */}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.fieldLabel}>Leave Type</Text>
+                                <View style={styles.pickerWrapper}>
+                                    <Picker
+                                        selectedValue={leaveType}
+                                        onValueChange={handleLeaveTypeChange}
+                                        style={styles.picker}
+                                        dropdownIconColor={theme.colors.primary}
+                                    >
+                                        <Picker.Item label="-- Select --" value="" />
+                                        {leaveTypeOptions.map(opt => (
+                                            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+                                        ))}
+                                    </Picker>
+                                </View>
+                            </View>
+
+                            {/* Comp-Off Date Selector (visible only when leaveType === 'coff') */}
+                            {leaveType === 'coff' && (
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.fieldLabel}>
+                                        Comp-Off Earned Date {compOffBalance > 0 && `(Balance: ${compOffBalance})`}
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={styles.compOffSelector}
+                                        onPress={() => {
+                                            if (compOffDates.length === 0) {
+                                                Alert.alert('No Comp-Off', 'You have no available comp-off dates.');
+                                            } else {
+                                                setShowCompOffModal(true);
+                                            }
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name="calendar-outline" size={20} color={theme.colors.textTertiary} />
+                                        <Text style={styles.compOffSelectorText}>
+                                            {selectedCompOffDate ? formatDate(selectedCompOffDate) : 'Choose a date'}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={18} color={theme.colors.textTertiary} />
+                                    </TouchableOpacity>
+                                    {loadingCompOff && (
+                                        <Text style={styles.loadingText}>Loading available dates...</Text>
+                                    )}
+                                </View>
+                            )}
+
+                            {/* Start & End Dates */}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.fieldLabel}>Start Date</Text>
+                                <TouchableOpacity
+                                    style={styles.dateInput}
+                                    onPress={() => setShowStartPicker(true)}
                                 >
-                                    <Ionicons
-                                        name={cat.icon}
-                                        size={22}
-                                        color={category === cat.id ? theme.colors.primary : theme.colors.textSecondary}
+                                    <Ionicons name="calendar" size={18} color={theme.colors.primary} />
+                                    <Text style={styles.dateValueText}>{formatDate(startDate)}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {category === 1 && (
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.fieldLabel}>End Date</Text>
+                                    <TouchableOpacity
+                                        style={styles.dateInput}
+                                        onPress={() => setShowEndPicker(true)}
+                                    >
+                                        <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
+                                        <Text style={styles.dateValueText}>{formatDate(endDate)}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {showStartPicker && (
+                                <DateTimePicker
+                                    value={startDate}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={handleStartDateChange}
+                                    minimumDate={new Date()}
+                                />
+                            )}
+                            {showEndPicker && (
+                                <DateTimePicker
+                                    value={endDate}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={handleEndDateChange}
+                                    minimumDate={startDate}
+                                />
+                            )}
+                        </>
+                    )}
+
+                    {category === 2 && (
+                        <>
+                            {/* Half Day Date */}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.fieldLabel}>Date</Text>
+                                <TouchableOpacity
+                                    style={styles.dateInput}
+                                    onPress={() => setShowHalfDayPicker(true)}
+                                >
+                                    <Ionicons name="calendar" size={18} color={theme.colors.primary} />
+                                    <Text style={styles.dateValueText}>{formatDate(halfDayDate)}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Session */}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.fieldLabel}>Session</Text>
+                                <View style={styles.pickerWrapper}>
+                                    <Picker
+                                        selectedValue={halfDaySession}
+                                        onValueChange={setHalfDaySession}
+                                        style={styles.picker}
+                                        dropdownIconColor={theme.colors.primary}
+                                    >
+                                        <Picker.Item label="-- Select --" value="" />
+                                        {sessionOptions.map(opt => (
+                                            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+                                        ))}
+                                    </Picker>
+                                </View>
+                            </View>
+
+                            {showHalfDayPicker && (
+                                <DateTimePicker
+                                    value={halfDayDate}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={handleHalfDayDateChange}
+                                    minimumDate={new Date()}
+                                />
+                            )}
+                        </>
+                    )}
+
+                    {(category === 3 || category === 4) && (
+                        <>
+                            {/* Date */}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.fieldLabel}>Date</Text>
+                                <TouchableOpacity
+                                    style={styles.dateInput}
+                                    onPress={() => setShowTimePicker(true)}
+                                >
+                                    <Ionicons name="calendar" size={18} color={theme.colors.primary} />
+                                    <Text style={styles.dateValueText}>{formatDate(timeDate)}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Time */}
+                            <View style={styles.formGroup}>
+                                <Text style={styles.fieldLabel}>Time (HH:MM)</Text>
+                                <View style={styles.inputWrapper}>
+                                    <Ionicons name="time-outline" size={20} color={theme.colors.textTertiary} style={styles.inputIcon} />
+                                    <TextInput
+                                        style={styles.textInput}
+                                        value={timeValue}
+                                        onChangeText={setTimeValue}
+                                        placeholder="e.g. 14:30"
+                                        placeholderTextColor={theme.colors.textQuarterly}
+                                        keyboardType="numbers-and-punctuation"
                                     />
                                 </View>
-                                <Text
-                                    style={[
-                                        styles.catLabel,
-                                        category === cat.id && styles.catLabelActive,
-                                    ]}
-                                >
-                                    {cat.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* 2. Duration / Date Section */}
-                    <Text style={styles.sectionTitle}>Duration</Text>
-                    <View style={styles.datesRow}>
-                        {/* Start Date */}
-                        <TouchableOpacity
-                            style={styles.dateInput}
-                            onPress={() => setShowStartDatePicker(true)}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.inputLabel}>Start Date</Text>
-                            <View style={styles.dateValueRow}>
-                                <Ionicons name="calendar" size={18} color={theme.colors.primary} />
-                                <Text style={styles.dateValueText}>
-                                    {startDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                </Text>
                             </View>
-                        </TouchableOpacity>
 
-                        <View style={styles.arrowContainer}>
-                            <Ionicons name="arrow-forward" size={18} color={theme.colors.textTertiary} />
-                        </View>
-
-                        {/* End Date */}
-                        <TouchableOpacity
-                            style={styles.dateInput}
-                            onPress={() => setShowEndDatePicker(true)}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.inputLabel}>End Date</Text>
-                            <View style={styles.dateValueRow}>
-                                <Ionicons name="calendar-outline" size={18} color={theme.colors.textSecondary} />
-                                <Text style={styles.dateValueText}>
-                                    {endDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Date Pickers */}
-                    {showStartDatePicker && (
-                        <DateTimePicker
-                            value={startDate}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={handleStartDateChange}
-                            minimumDate={new Date()}
-                        />
-                    )}
-                    {showEndDatePicker && (
-                        <DateTimePicker
-                            value={endDate}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={handleEndDateChange}
-                            minimumDate={startDate}
-                        />
-                    )}
-
-                    {/* 3. Conditional Time Input */}
-                    {(category === 2 || category === 3) && (
-                        <View style={styles.formGroup}>
-                            <Text style={styles.sectionTitle}>
-                                Time <Text style={styles.subLabel}>(HH:MM)</Text>
-                            </Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="time-outline" size={20} color={theme.colors.textTertiary} style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.textInput}
-                                    value={timeValue}
-                                    onChangeText={setTimeValue}
-                                    placeholder="e.g. 14:30"
-                                    placeholderTextColor={theme.colors.textQuarterly}
-                                    keyboardType="numbers-and-punctuation"
+                            {showTimePicker && (
+                                <DateTimePicker
+                                    value={timeDate}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={handleTimeDateChange}
+                                    minimumDate={new Date()}
                                 />
-                            </View>
-                        </View>
+                            )}
+                        </>
                     )}
 
-                    {/* 4. Reason Input */}
+                    {/* Reason */}
                     <View style={styles.formGroup}>
-                        <Text style={styles.sectionTitle}>Reason</Text>
+                        <Text style={styles.fieldLabel}>Reason</Text>
                         <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
                             <TextInput
                                 style={styles.textArea}
@@ -334,40 +571,55 @@ const ApplyLeaveScreen = ({ navigation }) => {
                         </View>
                     </View>
 
-                    {/* 5. Summary & Action */}
-                    <View style={styles.summaryBox}>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Total Request</Text>
-                            <Text style={styles.summaryValue}>{durationDays} Day{durationDays !== 1 ? 's' : ''}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                        <Text style={styles.summaryNote}>Request will be sent to your manager for approval.</Text>
-
-                        <GradientButton
-                            title={loading ? "Submitting..." : "Submit Application"}
-                            onPress={handleSubmit}
-                            disabled={loading}
-                            icon={!loading && <Ionicons name="paper-plane-outline" size={18} color="#FFF" />}
-                            style={styles.submitBtn}
-                        />
-                    </View>
+                    {/* Submit Button */}
+                    <GradientButton
+                        title={loading ? "Submitting..." : "Submit Application"}
+                        onPress={handleSubmit}
+                        disabled={loading}
+                        icon={!loading && <Ionicons name="paper-plane-outline" size={18} color="#FFF" />}
+                        style={styles.submitBtn}
+                    />
 
                     <View style={{ height: 40 }} />
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Comp-Off Date Selection Modal */}
+            <Modal
+                visible={showCompOffModal}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowCompOffModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select Comp-Off Earned Date</Text>
+                            <TouchableOpacity onPress={() => setShowCompOffModal(false)}>
+                                <Ionicons name="close" size={24} color={theme.colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={compOffDates}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={renderCompOffItem}
+                            ListEmptyComponent={
+                                <Text style={styles.modalEmpty}>No comp-off dates available.</Text>
+                            }
+                        />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
 
-// ─────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────
+// Styles remain unchanged – keep your existing styles
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
     },
-    // Header
     headerGradient: {
         paddingHorizontal: 20,
         paddingBottom: 24,
@@ -409,146 +661,66 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    // Employee Strip in header
-    employeeStrip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        padding: 10,
-        borderRadius: 16,
-    },
-    avatarMini: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: '#FFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 10,
-    },
-    avatarText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: theme.colors.primary,
-    },
-    empName: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#FFF',
-    },
-    empId: {
-        fontSize: 11,
-        color: 'rgba(255,255,255,0.8)',
-    },
-
-    // Content
     scrollArea: {
         flex: 1,
     },
     scrollContent: {
         padding: 20,
     },
-    sectionTitle: {
+    formGroup: {
+        marginBottom: 20,
+    },
+    fieldLabel: {
         fontSize: 14,
-        fontWeight: '700',
+        fontWeight: '600',
         color: theme.colors.text,
-        marginBottom: 12,
+        marginBottom: 8,
         marginLeft: 4,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
     },
-    subLabel: {
-        fontSize: 11,
-        color: theme.colors.textTertiary,
-        textTransform: 'none',
-    },
-
-    // Category Grid
-    categoryGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: 24,
-    },
-    catCard: {
-        width: '48%',
+    pickerWrapper: {
         backgroundColor: '#FFF',
-        paddingVertical: 16,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-        alignItems: 'center',
         borderWidth: 1,
         borderColor: theme.colors.border,
-        ...theme.shadow.light,
+        borderRadius: 14,
+        overflow: 'hidden',
     },
-    catCardActive: {
-        backgroundColor: '#EFF6FF',
-        borderColor: theme.colors.primary,
-    },
-    catIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        marginBottom: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    catIconInactive: {
-        backgroundColor: '#F3F4F6',
-    },
-    catIconActive: {
-        backgroundColor: '#FFF',
-    },
-    catLabel: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: theme.colors.textSecondary,
-    },
-    catLabelActive: {
-        color: theme.colors.primary,
-        fontWeight: '700',
-    },
-
-    // Dates Row
-    datesRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 24,
+    picker: {
+        height: 50,
+        width: '100%',
+        color: theme.colors.text,
     },
     dateInput: {
-        flex: 1,
-        backgroundColor: '#FFF',
-        padding: 12,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        ...theme.shadow.light,
-    },
-    inputLabel: {
-        fontSize: 11,
-        color: theme.colors.textTertiary,
-        marginBottom: 6,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-    },
-    dateValueRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#FFF',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        height: 50,
         gap: 8,
     },
     dateValueText: {
-        fontSize: 14,
-        fontWeight: '600',
+        fontSize: 15,
         color: theme.colors.text,
+        flex: 1,
     },
-    arrowContainer: {
-        paddingHorizontal: 10,
+    compOffSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        height: 50,
+        justifyContent: 'space-between',
     },
-
-    // Form Groups
-    formGroup: {
-        marginBottom: 20,
+    compOffSelectorText: {
+        flex: 1,
+        fontSize: 15,
+        color: theme.colors.text,
+        marginLeft: 10,
     },
     inputWrapper: {
         flexDirection: 'row',
@@ -579,47 +751,58 @@ const styles = StyleSheet.create({
         color: theme.colors.text,
         minHeight: 80,
     },
-
-    // Summary Box
-    summaryBox: {
+    loadingText: {
+        fontSize: 12,
+        color: theme.colors.textTertiary,
+        marginTop: 8,
+        textAlign: 'center',
+    },
+    submitBtn: {
+        borderRadius: 14,
+        marginTop: 10,
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '85%',
+        maxHeight: '60%',
         backgroundColor: '#FFF',
         borderRadius: 20,
         padding: 20,
-        marginTop: 10,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
         ...theme.shadow.medium,
     },
-    summaryRow: {
+    modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 16,
     },
-    summaryLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: theme.colors.textSecondary,
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: theme.colors.text,
     },
-    summaryValue: {
-        fontSize: 18,
-        fontWeight: '800',
-        color: theme.colors.primary,
+    modalItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.divider,
+        gap: 12,
     },
-    divider: {
-        height: 1,
-        backgroundColor: theme.colors.divider,
-        marginBottom: 16,
+    modalItemText: {
+        fontSize: 15,
+        color: theme.colors.text,
     },
-    summaryNote: {
-        fontSize: 12,
-        color: theme.colors.textTertiary,
+    modalEmpty: {
         textAlign: 'center',
-        marginBottom: 20,
-        fontStyle: 'italic',
-    },
-    submitBtn: {
-        borderRadius: 14,
+        color: theme.colors.textTertiary,
+        paddingVertical: 20,
     },
 });
 

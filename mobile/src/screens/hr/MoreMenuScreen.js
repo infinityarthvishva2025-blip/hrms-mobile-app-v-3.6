@@ -7,11 +7,11 @@ import { useAuth } from '../../context/AuthContext';
 
 const MoreMenuScreen = ({ navigation }) => {
     const { user, logout, role } = useAuth();
-
     const normalizedRole = role?.toLowerCase();
 
-    const canViewReports =
-        // normalizedRole === 'manager' ||
+    // Roles that can see Daily Report Inbox
+    const canViewDailyReportInbox =
+        normalizedRole === 'hr' ||
         normalizedRole === 'director' ||
         normalizedRole === 'vp' ||
         normalizedRole === 'gm';
@@ -50,41 +50,39 @@ const MoreMenuScreen = ({ navigation }) => {
                 { icon: 'document-text-outline', label: 'Resignation Requests', screen: 'ResignationScreen' },
             ]
         },
+
+        // ✅ Daily Report Inbox — visible for HR, Director, VP, GM
+        ...(canViewDailyReportInbox
+            ? [{
+                title: 'Reports',
+                items: [
+                    { icon: 'stats-chart-outline', label: 'Daily Report Inbox', screen: 'DailyReportInboxScreen' },
+                ],
+            }]
+            : []),
+
         {
-            title: 'Daily Report Inbox',
-            items: canViewReports
-                ? [{ icon: 'stats-chart-outline', label: 'Daily Report Inbox', screen: 'DailyReportInboxScreen' }]
-                : []
+            title: 'My Work',
+            items: [
+                { icon: 'time-outline', label: 'Mark Attendance', screen: 'MarkAttendance' },
+                { icon: 'stats-chart-outline', label: 'Attendance Summary', screen: 'AttendanceSummary' },
+                { icon: 'calendar-number-outline', label: 'Apply Leave', screen: 'ApplyLeave' },
+                { icon: 'wallet-outline', label: 'My Leaves', screen: 'MyLeaves' },
+                { icon: 'wallet-outline', label: 'My CompopOffs', screen: 'CompOffScreen' },
+            ]
         },
-
-
+        {
+            title: 'Personal',
+            items: [
+                { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
+                { icon: 'create-outline', label: 'Edit Profile', screen: 'EditProfile' },
+                { icon: 'document-text-outline', label: 'Payslip', screen: 'Payslips' },
+            ]
+        },
         {
             title: 'Settings',
             items: [
                 { icon: 'settings-outline', label: 'Settings', screen: 'SettingsScreen' },
-            ]
-        },
-
-         {
-            title: 'Common',
-            items: [
-                { icon: 'settings-outline', label: 'MarkAttendanceScreen', screen: 'MarkAttendanceScreen' },
-                { icon: 'settings-outline', label: 'ApplyLeaveScreen', screen: 'ApplyLeaveScreen' },
-                 { icon: 'settings-outline', label: 'AttendanceSummaryScreen', screen: 'AttendanceSummaryScreen' },
-                  { icon: 'settings-outline', label: 'MyLeavesScreen', screen: 'MyLeavesScreen' },
-                   { icon: 'settings-outline', label: 'ProfileScreen', screen: 'ProfileScreen' },
-                    { icon: 'settings-outline', label: 'PayslipsScreen', screen: 'PayslipsScreen' },
-                    
-            ]
-        },
-
-
-
-
-        {
-            title: 'Personal Reports',
-            items: [
-                { icon: 'documents', label: 'My Reports', screen: 'SettingsScreen' },
             ]
         },
     ];

@@ -17,39 +17,34 @@ const RootNavigator = () => {
         );
     }
 
-    // Role-based navigation
     const renderNavigator = () => {
-        // // Not logged in - show auth screens
-        // return <AuthStack />;
-        // // return <EmployeeNavigator />;
-        // // return <HRNavigator />;
-
-        // If no token → show auth screens
+        // Not logged in → show auth screens
         if (!token) {
             return <AuthStack />;
-            //  return <EmployeeNavigator />;
         }
 
-        // Logged in - show role-based navigation
-        if (role === 'Employee') {
-            return <EmployeeNavigator />;
+        switch (role) {
+            // Pure employee — standard employee tabs
+            case 'Employee':
+                return <EmployeeNavigator />;
+
+            // Manager = Employee + Daily Report Inbox
+            // Uses EmployeeNavigator (which conditionally shows DailyReportInbox for Manager)
+            case 'Manager':
+                return <EmployeeNavigator />;
+
+            // Admin-level roles — HR navigator (has all employee screens + admin screens)
+            case 'HR':
+            case 'Director':
+            case 'VP':
+            case 'GM':
+                return <HRNavigator />;
+
+            // Unknown role — safe fallback
+            default:
+                console.warn(`Unknown role "${role}", defaulting to Employee navigation`);
+                return <EmployeeNavigator />;
         }
-
-        // ✅ HR + Manager + Director use HRNavigator
-        if (
-            role === 'HR' ||
-            role === 'Director' ||
-            role === "VP" ||
-            role === "GM"
-        ) {
-            return <HRNavigator />;
-        }
-
-        // Fallback
-        console.warn('Unknown role, defaulting to Employee navigation');
-        return <EmployeeNavigator />;
-
-
     };
 
     return (

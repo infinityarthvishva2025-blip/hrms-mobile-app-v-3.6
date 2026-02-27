@@ -2,7 +2,7 @@ import api from '../api';
 
 const LeaveService = {
   // ================= EMPLOYEE OPERATIONS =================
-  
+
   /**
    * Apply for leave
    * @param {Object} leaveData - { category, leaveType, startDate, endDate, timeValue, reason }
@@ -10,7 +10,7 @@ const LeaveService = {
    */
   applyLeave: async (leaveData) => {
     try {
-      const response = await api.post('/Leave', leaveData);
+      const response = await api.post('/Leave/Create', leaveData);
       return response.data;
     } catch (error) {
       throw error;
@@ -18,9 +18,26 @@ const LeaveService = {
   },
 
   /**
+ * Get comp-off details (balance and available dates)
+ * @returns {Promise}
+ */
+  getCompOffDetails: async () => {
+    try {
+      const response = await api.get('/Leave/Create');
+      return response.data; // returns { compOffBalance, compOffDates, ... }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+
+
+  /**
    * Get my leaves
    * @returns {Promise}
    */
+
+
   getMyLeaves: async () => {
     try {
       const response = await api.get('/Leave/MyLeaves');

@@ -18,6 +18,20 @@ const EmployeeService = {
         }
     },
 
+    // Inside EmployeeService.js (or wherever API calls are defined)
+
+ updateEmployeeWithFormData : async (id, formData) => {
+    const response = await api.put(`/employees/${id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+},
+
+// Keep the existing getEmployeeById, etc.
+
+
     /**
      * Fetch holidays
      * GET /api/holidays
@@ -31,6 +45,8 @@ const EmployeeService = {
             throw error;
         }
     },
+
+
 
     /**
      * Fetch all employees (HR functionality)

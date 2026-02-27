@@ -5,52 +5,47 @@ import { View, StyleSheet, Platform, TouchableOpacity, Text } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// import { useAuth } from '../context/AuthContext'; // ✅ Added
 
-// HR Screens
+// HR-specific Screens
 import DashboardScreen from '../screens/employee/DashboardScreen';
-import MoreMenuScreen from '../screens/hr/MoreMenuScreen';
+import HRMoreMenuScreen from '../screens/hr/MoreMenuScreen';
 
-// Employee Stack Screens
+// Employee Directory Stack
 import EmployeeDirectoryScreen from '../screens/hr/employees/EmployeeDirectoryScreen';
 import EmployeeDetailsScreen from '../screens/hr/employees/EmployeeDetailsScreen';
 import AddEmployeeScreen from '../screens/hr/employees/AddEmployeeScreen';
 
-// Approvals Stack Screens
+// Approvals Stack
 import PendingApprovalsScreen from '../screens/hr/approvals/PendingApprovalsScreen';
 import LeaveApprovalScreen from '../screens/hr/approvals/LeaveApprovalScreen';
 import AttendanceApprovalScreen from '../screens/hr/approvals/AttendanceApprovalScreen';
 import ResignationApprovalScreen from '../screens/hr/approvals/ResignationApprovalScreen';
 
-// Attendance Stack Screens
-import TeamAttendanceScreen from '../screens/hr/attendance/TeamAttendanceScreen';
-import AttendanceReportsScreen from '../screens/hr/attendance/AttendanceReportsScreen';
-import CorrectionRequestDetailScreen from '../screens/hr/attendance/CorrectionRequestDetailScreen';
-import BiometricDataScreen from '../screens/hr/attendance/BiometricDataScreen';
-
-// More Stack Screens
+// HR More Stack Screens
 import LeaveManagementScreen from '../screens/hr/leave/LeaveManagementScreen';
 import PayrollScreen from '../screens/hr/payroll/PayrollScreen';
 import GurukulAdminScreen from '../screens/hr/gurukul/GurukulAdminScreen';
 import AnnouncementsScreen from '../screens/hr/announcements/AnnouncementsScreen';
 import ResignationScreen from '../screens/hr/resignation/ResignationScreen';
-// import ReportsScreen from '../screens/hr/reports/DailyReportInboxScreen';
 import SettingsScreen from '../screens/hr/SettingsScreen';
 import HolidaysScreen from '../screens/hr/holidays/HolidaysScreen';
-
-import theme from '../constants/theme';
-import { useAuth } from '../context/AuthContext';
 import DailyReportInboxScreen from '../screens/hr/reports/DailyReportInboxScreen';
+
+// ✅ Common Employee Screens (available for all admin-level roles)
 import MarkAttendanceScreen from '../screens/employee/attendance/MarkAttendanceScreen';
 import AttendanceSummaryScreen from '../screens/employee/attendance/AttendanceSummaryScreen';
 import ProfileScreen from '../screens/employee/ProfileScreen';
+import EditProfileScreen from '../screens/employee/EditProfileScreen';
 import PayslipsScreen from '../screens/employee/profile/PayslipsScreen';
 import MyLeavesScreen from '../screens/employee/leaves/MyLeavesScreen';
 import ApplyLeaveScreen from '../screens/employee/leaves/ApplyLeaveScreen';
 
+import theme from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
+import CompOffScreen from '../screens/employee/leaves/CompOffScreen';
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-
 
 // ================= EMPLOYEES STACK =================
 const EmployeesStack = () => (
@@ -66,7 +61,6 @@ const EmployeesStack = () => (
         <Stack.Screen name="AddEmployee" component={AddEmployeeScreen} options={{ title: 'Add Employee' }} />
     </Stack.Navigator>
 );
-
 
 // ================= APPROVALS STACK =================
 const ApprovalsStack = () => (
@@ -84,9 +78,8 @@ const ApprovalsStack = () => (
     </Stack.Navigator>
 );
 
-
-// ================= ATTENDANCE STACK =================
-const AttendanceStack = () => (
+// ================= MORE STACK =================
+const MoreStack = () => (
     <Stack.Navigator
         screenOptions={{
             headerStyle: { backgroundColor: theme.colors.background },
@@ -94,65 +87,38 @@ const AttendanceStack = () => (
             headerTitleStyle: { fontWeight: '600' },
         }}
     >
-        <Stack.Screen name="TeamAttendance" component={TeamAttendanceScreen} options={{ title: 'Team Attendance' }} />
-        <Stack.Screen name="AttendanceReports" component={AttendanceReportsScreen} options={{ title: 'Correction Requests' }} />
-        <Stack.Screen name="CorrectionRequestDetail" component={CorrectionRequestDetailScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="BiometricData" component={BiometricDataScreen} options={{ title: 'Biometric Data' }} />
+        {/* HR More Menu */}
+        <Stack.Screen name="MoreMenu" component={HRMoreMenuScreen} options={{ headerShown: false }} />
+
+        {/* HR Admin Screens */}
+        <Stack.Screen name="LeaveManagementScreen" component={LeaveManagementScreen} options={{ title: 'Leave Management' }} />
+        <Stack.Screen name="PayrollScreen" component={PayrollScreen} options={{ title: 'Payroll' }} />
+        <Stack.Screen name="GurukulAdminScreen" component={GurukulAdminScreen} options={{ title: 'Gurukul Admin' }} />
+        <Stack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="HolidaysScreen" component={HolidaysScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ResignationScreen" component={ResignationScreen} options={{ title: 'Resignation Requests' }} />
+        <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="DailyReportInboxScreen" component={DailyReportInboxScreen} options={{ title: 'Daily Report Inbox' }} />
+
+        {/* ✅ Common Employee Screens — accessible to HR, Director, VP, GM */}
+        <Stack.Screen name="MarkAttendance" component={MarkAttendanceScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ApplyLeave" component={ApplyLeaveScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AttendanceSummary" component={AttendanceSummaryScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="MyLeaves" component={MyLeavesScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
+
+
+        <Stack.Screen name="CompOffScreen" component={CompOffScreen} options={{ headerShown: false }} />
+
+
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Payslips" component={PayslipsScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
 );
 
 
-// ================= MORE STACK (ROLE BASED REPORTS) =================
-const MoreStack = ({ role }) => {
-    const normalizedRole = role?.toLowerCase();
-
-    const canViewReports =
-        normalizedRole === 'manager' ||
-        normalizedRole === 'gm';
-
-    return (
-        <Stack.Navigator
-            screenOptions={{
-                headerStyle: { backgroundColor: theme.colors.background },
-                headerTintColor: theme.colors.text,
-                headerTitleStyle: { fontWeight: '600' },
-            }}
-        >
-            <Stack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="LeaveManagementScreen" component={LeaveManagementScreen} options={{ title: 'Leave Management' }} />
-            <Stack.Screen name="PayrollScreen" component={PayrollScreen} options={{ title: 'Payroll' }} />
-            <Stack.Screen name="GurukulAdminScreen" component={GurukulAdminScreen} options={{ title: 'Gurukul Admin' }} />
-            <Stack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="HolidaysScreen" component={HolidaysScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ResignationScreen" component={ResignationScreen} options={{ title: 'Resignation Requests' }} />
-
-             <Stack.Screen name="MarkAttendanceScreen" component={MarkAttendanceScreen} options={{ title: 'MarkAttendanceScreen' }} />
-
-              <Stack.Screen name="MyLeavesScreen" component={MyLeavesScreen} options={{ title: 'MyLeavesScreen' }} />
-               <Stack.Screen name="ApplyLeaveScreen" component={ApplyLeaveScreen} options={{ title: 'ApplyLeaveScreen' }} />
-               <Stack.Screen name="AttendanceSummaryScreen" component={AttendanceSummaryScreen} options={{ title: 'AttendanceSummaryScreen' }} />
-                <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ title: 'ProfileScreen' }} />
-                 <Stack.Screen name="PayslipsScreen" component={PayslipsScreen} options={{ title: 'PayslipsScreen' }} />
-
-
-   
-            {/* ✅ Only Manager & Director */}
-            <Stack.Screen
-                name="DailyReportInboxScreen"
-                component={DailyReportInboxScreen}
-                options={{ title: 'Daily Report Inbox' }}
-            />
-
-            <Stack.Screen name="SettingsScreen" component={SettingsScreen} options={{ title: 'Settings' }} />
-        </Stack.Navigator>
-    );
-};
-
-
 // ================= MAIN HR NAVIGATOR =================
 const HRNavigator = () => {
-    const { role } = useAuth(); // ✅ Get role from context
-
     return (
         <Tab.Navigator
             tabBar={props => <CustomTabBar {...props} />}
@@ -164,12 +130,7 @@ const HRNavigator = () => {
             <Tab.Screen name="Home" component={DashboardScreen} />
             <Tab.Screen name="Employees" component={EmployeesStack} />
             <Tab.Screen name="Approvals" component={ApprovalsStack} />
-            {/* <Tab.Screen name="Attendance" component={AttendanceStack} /> */}
-
-            {/* Pass role to MoreStack */}
-            <Tab.Screen name="More">
-                {() => <MoreStack role={role} />}
-            </Tab.Screen>
+            <Tab.Screen name="More" component={MoreStack} />
         </Tab.Navigator>
     );
 };
@@ -208,7 +169,6 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                     if (route.name === 'Home') iconName = isFocused ? 'home' : 'home-outline';
                     else if (route.name === 'Employees') iconName = isFocused ? 'people' : 'people-outline';
                     else if (route.name === 'Approvals') iconName = isFocused ? 'checkmark-done' : 'checkmark-done-outline';
-                    // else if (route.name === 'Attendance') iconName = isFocused ? 'time' : 'time-outline';
                     else if (route.name === 'More') iconName = isFocused ? 'menu' : 'menu-outline';
 
                     return (

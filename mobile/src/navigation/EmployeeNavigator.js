@@ -39,6 +39,7 @@ import theme from '../constants/theme';
 import AttSummary from '../screens/employee/attendance/attSummary';
 import MyLeavesScreen from '../screens/employee/leaves/MyLeavesScreen';
 import DailyReportInboxScreen from '../screens/hr/reports/DailyReportInboxScreen';
+import CompOffScreen from '../screens/employee/leaves/CompOffScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -91,6 +92,8 @@ const MoreStack = () => (
 
         {/* Profile Screens */}
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
+         <Stack.Screen name="CompOffScreen" component={CompOffScreen} options={{ headerShown: false }} />
+
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
 
         {/* Legacy screens that still need headers */}
