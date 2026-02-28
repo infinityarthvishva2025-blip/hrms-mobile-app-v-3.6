@@ -36,7 +36,7 @@ const MoreMenuScreen = ({ navigation }) => {
                 { icon: 'time-outline', label: 'Daily Reports', screen: 'DailyReportsScreen' },
                 { icon: 'calendar-outline', label: 'Holidays', screen: 'Holidays' },
                 { icon: 'wallet-outline', label: 'My Leaves', screen: 'LeaveBalance' },
-                { icon: 'stats-chart-outline', label: 'Attendance Summary', screen: 'AttendanceSummaryy' },
+                { icon: 'stats-chart-outline', label: 'Attendance Summary', screen: 'AttendanceSummary' },
             ],
         },
 
@@ -60,7 +60,7 @@ const MoreMenuScreen = ({ navigation }) => {
             title: 'Other',
             items: [
                 { icon: 'person-outline', label: 'My Profile', screen: 'ProfileScreen' },
-                 { icon: 'person-outline', label: 'My CompOffs', screen: 'CompOffScreen' },
+                { icon: 'person-outline', label: 'My CompOffs', screen: 'CompOffScreen' },
                 { icon: 'document-text-outline', label: 'PaySlip', screen: 'PayslipsScreen' },
             ],
         },

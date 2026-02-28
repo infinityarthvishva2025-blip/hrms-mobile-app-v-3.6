@@ -54,7 +54,7 @@ const AttendanceStack = () => (
         }}
     >
         <Stack.Screen name="MarkAttendance" component={MarkAttendanceScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="AttendanceSummaryy" component={AttendanceSummaryScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AttendanceSummary" component={AttendanceSummaryScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DailyReportForm" component={DailyReportFormScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DailySummary" component={DailySummaryScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Regularization" component={RegularizationScreen} options={{ headerShown: false }} />
@@ -92,7 +92,7 @@ const MoreStack = () => (
 
         {/* Profile Screens */}
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
-         <Stack.Screen name="CompOffScreen" component={CompOffScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="CompOffScreen" component={CompOffScreen} options={{ headerShown: false }} />
 
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
 
@@ -106,7 +106,7 @@ const MoreStack = () => (
         <Stack.Screen name="GurukulScreen" component={GurukulScreen} options={{ title: 'Gurukul' }} />
         <Stack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DailyReportsScreen" component={DailyReportsScreen} options={{ title: 'Daily Reports' }} />
-        <Stack.Screen name="AttendanceSummaryy" component={AttendanceSummaryScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AttendanceSummary" component={AttendanceSummaryScreen} options={{ headerShown: false }} />
 
         {/* Shared Screens for local navigation within More tab */}
         <Stack.Screen name="Regularization" component={RegularizationScreen} options={{ headerShown: false }} />
@@ -114,14 +114,14 @@ const MoreStack = () => (
         {/* HolidaysScreen has a custom header, so we hide the navigator header here too */}
         <Stack.Screen name="Holidays" component={HolidaysScreen} options={{ headerShown: false }} />
         <Stack.Screen name="LeaveBalance" component={MyLeavesScreen} options={{ headerShown: false }} />
-                
+
         <Stack.Screen
             name="DailyReportInboxScreen"
             component={DailyReportInboxScreen}
             options={{ title: 'Daily Report Inbox' }}
         />
 
-        <Stack.Screen name="AttendanceSumamry" component={AttSummary} options={{ title: 'Attendance Summary' }} />
+
 
 
         <Stack.Screen name="MyLeaves" component={MyLeavesScreen} options={{ headerShown: false }} />

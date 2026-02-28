@@ -264,7 +264,18 @@ const DashboardScreen = () => {
         {/* ───────── MAIN CONTENT ───────── */}
         <View style={styles.mainContent}>
 
-          {/* QUICK ACTIONS */}
+          {/* QUICK ACTIONS
+           *  ─────────────────────────────────────────────────────────────────
+           *  This DashboardScreen is shared by BOTH EmployeeNavigator and
+           *  HRNavigator. Their tab structures differ:
+           *
+           *    EmployeeNavigator: Home | Attendance | Leaves | More
+           *    HRNavigator:       Home | Employees  | Approvals | More
+           *
+           *  Admin-level roles (HR / Director / GM / VP) have NO 'Attendance'
+           *  or 'Leaves' tab. All self-service screens for those roles live
+           *  inside the HR 'More' stack.  We must route based on role.
+           *  ─────────────────────────────────────────────────────────────────*/}
           <View style={[styles.card, styles.quickActionsCard]}>
             <Text style={styles.quickActionsTitle}>Quick Actions</Text>
             <View style={styles.quickActionsRow}>
@@ -272,19 +283,49 @@ const DashboardScreen = () => {
                 icon="location"
                 label="Mark Attendance"
                 colors={['#2076C7', '#5BA3E0']}
-                onPress={() => navigation.navigate('Attendance', { screen: 'MarkAttendance', initial: false })}
+                onPress={() => {
+                  const role = user?.role;
+                  const isAdminRole = ['HR', 'Director', 'GM', 'VP'].includes(role);
+                  if (isAdminRole) {
+                    // HR Navigator: MarkAttendance is in the More stack
+                    navigation.navigate('More', { screen: 'MarkAttendance', initial: false });
+                  } else {
+                    // Employee Navigator: MarkAttendance is in the Attendance tab stack
+                    navigation.navigate('Attendance', { screen: 'MarkAttendance', initial: false });
+                  }
+                }}
               />
               <QuickActionItem
                 icon="stats-chart"
                 label="Summary"
                 colors={['#1CADA3', '#34D6CB']}
-                onPress={() => navigation.navigate('Attendance', { screen: 'AttendanceSummaryy', initial: false })}
+                onPress={() => {
+                  const role = user?.role;
+                  const isAdminRole = ['HR', 'Director', 'GM', 'VP'].includes(role);
+                  if (isAdminRole) {
+                    // HR Navigator: AttendanceSummary (single 'y') is in the More stack
+                    navigation.navigate('More', { screen: 'AttendanceSummary', initial: false });
+                  } else {
+                    // Employee Navigator: AttendanceSummary is in Attendance tab
+                    navigation.navigate('Attendance', { screen: 'AttendanceSummary', initial: false });
+                  }
+                }}
               />
               <QuickActionItem
                 icon="document-text"
                 label="Apply Leave"
                 colors={['#0D9488', '#28C4B4']}
-                onPress={() => navigation.navigate('Leaves', { screen: 'ApplyLeave' })}
+                onPress={() => {
+                  const role = user?.role;
+                  const isAdminRole = ['HR', 'Director', 'GM', 'VP'].includes(role);
+                  if (isAdminRole) {
+                    // HR Navigator: ApplyLeave is in the More stack
+                    navigation.navigate('More', { screen: 'ApplyLeave', initial: false });
+                  } else {
+                    // Employee Navigator: ApplyLeave is in the Leaves tab stack
+                    navigation.navigate('Leaves', { screen: 'ApplyLeave', initial: false });
+                  }
+                }}
               />
               <QuickActionItem
                 icon="wallet"

@@ -14,6 +14,8 @@ import {
     Modal,
     Dimensions
 } from 'react-native';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../../../constants/theme';
 import { useAuth } from '../../../context/AuthContext';
@@ -187,7 +189,7 @@ const LoginScreen = () => {
                                     </View>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="e.g. IA00087"
+                                        placeholder="e.g. IA000**"
                                         value={userId}
                                         onChangeText={setUserId}
                                         autoCapitalize="characters"
@@ -276,98 +278,148 @@ const LoginScreen = () => {
                 </ScrollView>
             </LinearGradient>
 
-            {/* Forgot Password Modal */}
+            {/* ── Forgot Password Modal ──────────────────────────────────────
+             *  FIX: On Android release builds, KeyboardAvoidingView behavior='height'
+             *  inside a Modal does not account for the software keyboard correctly.
+             *  Solution:
+             *   1. KeyboardAvoidingView wraps the ENTIRE modal (overlay + sheet)
+             *      with behavior='padding' on BOTH platforms (reliable in Modal context).
+             *   2. Modal content is wrapped in ScrollView so the user can scroll
+             *      inputs into view even on small screens.
+             *   3. Modal sheet is capped at 90% screen height (maxHeight) so it
+             *      never overflows, keeping the drag-to-dismiss area accessible.
+             * ─────────────────────────────────────────────────────────────── */}
             <Modal
                 visible={forgotModalVisible}
                 animationType="none"
                 transparent={true}
+                statusBarTranslucent={true}
                 onRequestClose={closeForgotModal}
             >
-                <View style={styles.modalOverlay}>
+                {/* KeyboardAvoidingView must be the outermost element inside Modal */}
+                <KeyboardAvoidingView
+                    behavior="padding"
+                    style={styles.modalKAV}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+                >
+                    {/* Semi-transparent backdrop – tap to close */}
                     <TouchableOpacity
                         style={styles.modalDismissArea}
                         activeOpacity={1}
                         onPress={closeForgotModal}
                     />
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={styles.modalContentWrapper}
-                    >
-                        <View style={styles.modalContent}>
-                            <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>Reset password</Text>
-                                <TouchableOpacity onPress={closeForgotModal} style={styles.closeButton}>
-                                    <Ionicons name="close" size={22} color={theme.colors.text} />
-                                </TouchableOpacity>
-                            </View>
 
+                    {/* Bottom sheet */}
+                    <View style={styles.modalContent}>
+                        {/* Drag handle */}
+                        <View style={styles.dragHandle} />
+
+                        {/* Header */}
+                        <View style={styles.modalHeader}>
+                            <View>
+                                <Text style={styles.modalTitle}>Reset Password</Text>
+                                <Text style={styles.modalSubtitle}>Enter your details to set a new password</Text>
+                            </View>
+                            <TouchableOpacity onPress={closeForgotModal} style={styles.closeButton}>
+                                <Ionicons name="close" size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Scrollable body – ensures inputs are reachable above keyboard */}
+                        <ScrollView
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator={false}
+                            bounces={false}
+                        >
                             {forgotError ? (
                                 <View style={styles.modalErrorContainer}>
-                                    <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
+                                    <View style={styles.modalErrorIconBg}>
+                                        <Ionicons name="alert-circle" size={16} color="#B91C1C" />
+                                    </View>
                                     <Text style={styles.modalErrorText}>{forgotError}</Text>
                                 </View>
                             ) : null}
 
                             {forgotSuccess ? (
                                 <View style={styles.successContainer}>
-                                    <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+                                    <View style={styles.modalSuccessIconBg}>
+                                        <Ionicons name="checkmark-circle" size={16} color="#166534" />
+                                    </View>
                                     <Text style={styles.successText}>{forgotSuccess}</Text>
                                 </View>
                             ) : null}
 
+                            {/* Employee Code */}
                             <View style={styles.modalInputGroup}>
                                 <Text style={styles.modalLabel}>Employee Code</Text>
                                 <View style={styles.modalInputWrapper}>
-                                    <Ionicons name="id-card-outline" size={16} color={theme.colors.textSecondary} style={styles.modalIcon} />
+                                    <View style={styles.modalInputIconBox}>
+                                        <Ionicons name="id-card-outline" size={16} color={theme.colors.primary} />
+                                    </View>
                                     <TextInput
                                         style={styles.modalInput}
-                                        placeholder="Enter your employee code"
+                                        placeholder="e.g. IA00087"
                                         value={forgotEmpCode}
                                         onChangeText={setForgotEmpCode}
                                         autoCapitalize="characters"
                                         autoCorrect={false}
-                                        placeholderTextColor={theme.colors.textTertiary}
+                                        placeholderTextColor="#94A3B8"
+                                        returnKeyType="next"
                                     />
                                 </View>
                             </View>
 
+                            {/* New Password */}
                             <View style={styles.modalInputGroup}>
                                 <Text style={styles.modalLabel}>New Password</Text>
                                 <View style={styles.modalInputWrapper}>
-                                    <Ionicons name="lock-closed-outline" size={16} color={theme.colors.textSecondary} style={styles.modalIcon} />
+                                    <View style={styles.modalInputIconBox}>
+                                        <Ionicons name="lock-closed-outline" size={16} color={theme.colors.primary} />
+                                    </View>
                                     <TextInput
                                         style={styles.modalInput}
                                         placeholder="At least 6 characters"
                                         value={newPassword}
                                         onChangeText={setNewPassword}
                                         secureTextEntry={!showForgotPasswords}
-                                        placeholderTextColor={theme.colors.textTertiary}
+                                        placeholderTextColor="#94A3B8"
+                                        returnKeyType="next"
                                     />
                                 </View>
                             </View>
 
+                            {/* Confirm Password */}
                             <View style={styles.modalInputGroup}>
                                 <Text style={styles.modalLabel}>Confirm Password</Text>
                                 <View style={styles.modalInputWrapper}>
-                                    <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.textSecondary} style={styles.modalIcon} />
+                                    <View style={styles.modalInputIconBox}>
+                                        <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.primary} />
+                                    </View>
                                     <TextInput
                                         style={styles.modalInput}
                                         placeholder="Re-enter new password"
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
                                         secureTextEntry={!showForgotPasswords}
-                                        placeholderTextColor={theme.colors.textTertiary}
+                                        placeholderTextColor="#94A3B8"
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleForgotPassword}
                                     />
-                                    <TouchableOpacity onPress={() => setShowForgotPasswords(!showForgotPasswords)}>
+                                    <TouchableOpacity
+                                        onPress={() => setShowForgotPasswords(!showForgotPasswords)}
+                                        style={styles.modalEyeBtn}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    >
                                         <Ionicons
-                                            name={showForgotPasswords ? "eye-outline" : "eye-off-outline"}
-                                            size={16}
-                                            color={theme.colors.textSecondary}
+                                            name={showForgotPasswords ? 'eye-outline' : 'eye-off-outline'}
+                                            size={18}
+                                            color="#94A3B8"
                                         />
                                     </TouchableOpacity>
                                 </View>
                             </View>
 
+                            {/* Action Buttons */}
                             <View style={styles.modalActionRow}>
                                 <TouchableOpacity
                                     onPress={closeForgotModal}
@@ -378,7 +430,7 @@ const LoginScreen = () => {
 
                                 <View style={{ flex: 2 }}>
                                     <GradientButton
-                                        title={forgotLoading ? "Processing..." : "Update Password"}
+                                        title={forgotLoading ? 'Processing...' : 'Update Password'}
                                         onPress={handleForgotPassword}
                                         disabled={forgotLoading || !!forgotSuccess}
                                         loading={forgotLoading}
@@ -386,9 +438,12 @@ const LoginScreen = () => {
                                     />
                                 </View>
                             </View>
-                        </View>
-                    </KeyboardAvoidingView>
-                </View>
+
+                            {/* Extra bottom padding above home indicator / nav bar */}
+                            <View style={{ height: Platform.OS === 'ios' ? 24 : 16 }} />
+                        </ScrollView>
+                    </View>
+                </KeyboardAvoidingView>
             </Modal>
         </KeyboardAvoidingView>
     );
@@ -653,62 +708,85 @@ const styles = StyleSheet.create({
     },
 
     // Modal Styles
-    modalOverlay: {
+    // ── KeyboardAvoidingView must be the root inside Modal ──
+    modalKAV: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        backgroundColor: 'rgba(15, 23, 42, 0.72)',
         justifyContent: 'flex-end',
     },
     modalDismissArea: {
         flex: 1,
     },
-    modalContentWrapper: {
-        width: '100%',
-    },
     modalContent: {
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        padding: 32,
-        paddingBottom: Platform.OS === 'ios' ? 48 : 32,
+        // Cap height at 90% so content is scrollable and backdrop remains tappable
+        maxHeight: SCREEN_HEIGHT * 0.90,
+        paddingHorizontal: 28,
+        paddingTop: 12,
+        paddingBottom: 0,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 20,
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+        elevation: 24,
+    },
+    dragHandle: {
+        width: 44,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#E2E8F0',
+        alignSelf: 'center',
+        marginBottom: 20,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 28,
+        alignItems: 'flex-start',
+        marginBottom: 24,
     },
     modalTitle: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: '900',
         color: '#1E293B',
         letterSpacing: -0.5,
+        marginBottom: 3,
+    },
+    modalSubtitle: {
+        fontSize: 12,
+        color: '#94A3B8',
+        fontWeight: '500',
     },
     closeButton: {
         backgroundColor: '#F1F5F9',
-        borderRadius: 12,
+        borderRadius: 10,
         padding: 8,
     },
     modalErrorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FEF2F2',
-        padding: 12,
+        padding: 14,
         borderRadius: 14,
-        marginBottom: 24,
+        marginBottom: 20,
         borderWidth: 1,
         borderColor: '#FEE2E2',
+    },
+    modalErrorIconBg: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        backgroundColor: '#FFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
     },
     modalErrorText: {
         flex: 1,
         color: '#B91C1C',
         fontSize: 13,
         fontWeight: '700',
-        marginLeft: 10,
     },
     successContainer: {
         flexDirection: 'row',
@@ -716,19 +794,27 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0FDF4',
         padding: 14,
         borderRadius: 14,
-        marginBottom: 24,
+        marginBottom: 20,
         borderWidth: 1,
         borderColor: '#DCFCE7',
+    },
+    modalSuccessIconBg: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        backgroundColor: '#FFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
     },
     successText: {
         flex: 1,
         color: '#166534',
         fontSize: 13,
         fontWeight: '700',
-        marginLeft: 10,
     },
     modalInputGroup: {
-        marginBottom: 20,
+        marginBottom: 18,
     },
     modalLabel: {
         fontSize: 10,
@@ -744,12 +830,18 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
         borderRadius: 14,
         paddingHorizontal: 14,
-        height: 52,
+        height: 54,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
-    modalIcon: {
-        marginRight: 10,
+    modalInputIconBox: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
     },
     modalInput: {
         flex: 1,
@@ -757,6 +849,9 @@ const styles = StyleSheet.create({
         color: '#1E293B',
         fontWeight: '600',
         height: '100%',
+    },
+    modalEyeBtn: {
+        padding: 6,
     },
     modalActionRow: {
         flexDirection: 'row',

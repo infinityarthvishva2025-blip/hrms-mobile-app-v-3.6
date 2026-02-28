@@ -26,6 +26,7 @@ const RootNavigator = () => {
         switch (role) {
             // Pure employee — standard employee tabs
             case 'Employee':
+                case 'Intern':
                 return <EmployeeNavigator />;
 
             // Manager = Employee + Daily Report Inbox

@@ -417,7 +417,7 @@ const MarkAttendanceScreen = ({ navigation }) => {
                 {/* View History Button */}
                 <TouchableOpacity
                     style={styles.summaryButton}
-                    onPress={() => navigation.navigate('AttendanceSummaryy')}
+                    onPress={() => navigation.navigate('AttendanceSummary')}
                     activeOpacity={0.8}
                 >
                     <LinearGradient
