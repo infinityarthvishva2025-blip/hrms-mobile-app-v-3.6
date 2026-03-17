@@ -33,31 +33,59 @@ const AttendanceService = {
    */
 
   
-  geoCheckIn: async ({ currentLatitude, currentLongitude, currentCity , geoTags }) => {
+  geoCheckIn: async ({ currentLatitude, currentLongitude, currentCity , geoTags, faceImageBase64 }) => {
     const response = await api.post('/attendance/geo-checkin', {
       currentLatitude,
       currentLongitude,
       currentCity,
-      geoTags
+      geoTags,
+      faceImageBase64
     });
     return response.data;
   },
 
-   getTodayAttendance :  async () => {
-  const response = await api.get('/attendance/today');
-  return response.data;
-}, 
+  getTodayAttendance: async () => {
+    const response = await api.get('/attendance/today');
+    return response.data;
+  }, 
 
+  /**
+   * Field Check-In — POST /api/attendance/field-work
+   * @param {{ latitude: number, longitude: number, faceImageBase64: string }} payload
+   * @returns {Promise<{ success: boolean }>}
+   */
+  fieldCheckIn: async ({ currentLatitude, currentLongitude, faceImageBase64 }) => {
+    const response = await api.post('/attendance/field-work', {
+      currentLatitude,
+      currentLongitude,
+      faceImageBase64
+    });
+    return response.data;
+  },
+
+  /**
+   * Field Check-Out — POST /api/attendance/field-checkout
+   * @param {{ latitude: number, longitude: number, faceImageBase64: string }} payload
+   * @returns {Promise<{ success: boolean }>}
+   */
+  fieldCheckOut: async ({ currentLatitude, currentLongitude, faceImageBase64 }) => {
+    const response = await api.post('/attendance/field-checkout', {
+      currentLatitude,
+      currentLongitude,
+      faceImageBase64
+    });
+    return response.data;
+  },
 
   /**
    * Geo Check-Out — POST /api/attendance/geo-checkout
    * Server identifies the employee from the auth token.
    * @returns {Promise<{ success: boolean }>}
    */
-  geoCheckOut: async ({currentLatitude , currentLongitude}) => {
-    const response = await api.post('/attendance/geo-checkout' ,{
-      currentLatitude ,
-      currentLongitude 
+  geoCheckOut: async ({ currentLatitude, currentLongitude }) => {
+    const response = await api.post('/attendance/geo-checkout', {
+      currentLatitude,
+      currentLongitude
     });
     return response.data;
   },

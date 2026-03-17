@@ -310,8 +310,8 @@ export const AttendanceProvider = ({ children }) => {
 
   // ── Actions ─────────────────────────────────────────────
 
-  /** Geo Check‑In: fetch GPS → call API → optimistic update */
-  const markCheckIn = useCallback(async () => {
+  /** Check‑In: fetch GPS → call API → optimistic update */
+  const markCheckIn = useCallback(async (type = 'geo', faceImageBase64 = null) => {
     if (checkInInProgressRef.current) {
       console.log('[Attendance] Check‑in already in progress – skipped');
       return;
@@ -325,12 +325,21 @@ export const AttendanceProvider = ({ children }) => {
       if (!location) return; // user already alerted
 
       // API call
-      await AttendanceService.geoCheckIn({
-        currentLatitude: location.latitude,
-        currentLongitude: location.longitude,
-        currentCity: "Pune",
-        geoTags:[]
-      });
+      if (type === 'field') {
+        await AttendanceService.fieldCheckIn({
+          currentLatitude: location.latitude,
+          currentLongitude: location.longitude,
+          faceImageBase64
+        });
+      } else {
+        await AttendanceService.geoCheckIn({
+          currentLatitude: location.latitude,
+          currentLongitude: location.longitude,
+          currentCity: "Pune",
+          geoTags:[],
+          faceImageBase64
+        });
+      }
 
       // Success – update state
       const now = new Date();
@@ -355,8 +364,8 @@ export const AttendanceProvider = ({ children }) => {
     }
   }, [persistTimerData]);
 
-  /** Perform Geo Check‑Out (called after daily report submission) */
-  const performCheckOut = useCallback(async () => {
+  /** Perform Check‑Out */
+  const performCheckOut = useCallback(async (type = 'geo', faceImageBase64 = null) => {
     if (checkOutInProgressRef.current) {
       console.log('[Attendance] Check‑out already in progress – skipped');
       return { success: false, message: 'Check‑out already in progress' };
@@ -368,10 +377,18 @@ export const AttendanceProvider = ({ children }) => {
       const location = await getLocationForAttendance();
       if (!location) throw new Error('Unable to fetch location for check‑out');
 
-      await AttendanceService.geoCheckOut({
-        currentLatitude: location.latitude,
-        currentLongitude: location.longitude,
-      });
+      if (type === 'field') {
+        await AttendanceService.fieldCheckOut({
+          currentLatitude: location.latitude,
+          currentLongitude: location.longitude,
+          faceImageBase64
+        });
+      } else {
+        await AttendanceService.geoCheckOut({
+          currentLatitude: location.latitude,
+          currentLongitude: location.longitude,
+        });
+      }
 
       const now = new Date();
       setAttendanceStatus('CHECKED_OUT');

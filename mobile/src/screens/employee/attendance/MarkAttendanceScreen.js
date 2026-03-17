@@ -29,6 +29,7 @@ import theme from '../../../constants/theme';
 import { useAuth } from '../../../context/AuthContext';
 import { useAttendance } from '../../../context/AttendanceContext';
 import AttendanceActionButton from '../../../components/common/AttendanceActionButton';
+import * as ImagePicker from 'expo-image-picker';
 import {
     getCurrentLocation,
     formatCoordinates,
@@ -126,14 +127,49 @@ const MarkAttendanceScreen = ({ navigation }) => {
             .padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
     };
 
-    const handleCheckIn = async () => {
+    const captureFaceImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'Camera permission is required to capture your face.');
+                return null;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                allowsEditing: false,
+                quality: 0.7,
+                base64: true,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                return `data:image/jpeg;base64,${result.assets[0].base64}`;
+            }
+            return null;
+        } catch (error) {
+            console.error('[MarkAttendance] Capture error:', error);
+            Alert.alert('Error', 'Failed to open camera.');
+            return null;
+        }
+    };
+
+    const handleCheckIn = async (type = 'geo') => {
         setSwipeLoading(true);
-        await markCheckIn();
+        const faceImage = await captureFaceImage();
+        if (faceImage) {
+            await markCheckIn(type, faceImage);
+        }
         setSwipeLoading(false);
     };
 
-    const handleCheckOut = () => {
-        navigation.navigate('DailyReportForm');
+    const handleCheckOut = async (type = 'geo') => {
+        if (type === 'field') {
+            const faceImage = await captureFaceImage();
+            if (faceImage) {
+                navigation.navigate('DailyReportForm', { type, faceImage });
+            }
+        } else {
+            navigation.navigate('DailyReportForm', { type, faceImage: null });
+        }
     };
 
     const onRefresh = async () => {
@@ -151,10 +187,10 @@ const MarkAttendanceScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <LinearGradient
+            {/* <LinearGradient
                 colors={theme.colors.gradientHeader}
                 style={[styles.headerBg, { height: insets.top + 80 }]}
-            />
+            /> */}
 
             <ScrollView
                 contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}
@@ -179,13 +215,34 @@ const MarkAttendanceScreen = ({ navigation }) => {
 
 
                 {/* Header */}
-                <View style={styles.headerContent}>
+                {/* <View style={styles.headerContent}>
                     <View>
                         <Text style={styles.title}>Attendance</Text>
                         <Text style={styles.subtitle}>{user?.name || user?.employeeName}</Text>
                     </View>
                     <View style={{ width: 40 }} />
-                </View>
+                </View> */}
+
+                <LinearGradient
+                    colors={theme.colors.gradientHeader}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.headerGradient, { paddingTop: insets.top + 8 }]}
+                >
+                    <View style={styles.headerRow}>
+                        <View style={styles.headerTextContainer}>
+                            <Text style={styles.headerTitle}>Mark Attendance</Text>
+                           
+                        </View>
+                        <TouchableOpacity
+                            style={styles.historyBtn}
+                             onPress={() => navigation.navigate('AttendanceSummary')}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="wallet-outline" size={22} color="#FFF" />
+                        </TouchableOpacity>
+                    </View>
+                </LinearGradient>
 
                 {/* ═══════════════════════════════════════════════
             GEO LOCATION CARD
@@ -340,46 +397,42 @@ const MarkAttendanceScreen = ({ navigation }) => {
               CHECKED_OUT    → Both disabled
           ═══════════════════════════════════════════ */}
                     <View style={styles.actionContainer}>
-                        {/* GEO CHECK-IN */}
+                        {/* GEO CHECK-IN & FIELD WORK */}
                         {isNotCheckedIn && (
-                            <View>
-                                <View style={styles.geoActionHeader}>
-                                    <LinearGradient
-                                        colors={[theme.colors.success, '#059669']}
-                                        style={styles.geoActionBadge}
-                                    >
-                                        <Ionicons name="navigate" size={12} color="#FFF" />
-                                        <Text style={styles.geoActionBadgeText}>GEO CHECK-IN</Text>
-                                    </LinearGradient>
-                                </View>
+                            <View style={{ gap: 16 }}>
                                 <AttendanceActionButton
                                     label="SECURE CHECK IN"
-                                    onPress={handleCheckIn}
+                                    onPress={() => handleCheckIn('geo')}
                                     loading={isProcessing}
                                     gradientColors={[theme.colors.success, '#059669']}
                                     iconName="finger-print"
                                 />
+                                <AttendanceActionButton
+                                    label="FIELD WORK CHECK IN"
+                                    onPress={() => handleCheckIn('field')}
+                                    loading={isProcessing}
+                                    gradientColors={[theme.colors.primary, '#1E40AF']}
+                                    iconName="briefcase"
+                                />
                             </View>
                         )}
 
-                        {/* GEO CHECK-OUT */}
+                        {/* GEO CHECK-OUT & FIELD CHECK-OUT */}
                         {isCheckedIn && (
-                            <View>
-                                <View style={styles.geoActionHeader}>
-                                    <LinearGradient
-                                        colors={[theme.colors.error, '#DC2626']}
-                                        style={styles.geoActionBadge}
-                                    >
-                                        <Ionicons name="navigate" size={12} color="#FFF" />
-                                        <Text style={styles.geoActionBadgeText}>GEO CHECK-OUT</Text>
-                                    </LinearGradient>
-                                </View>
+                            <View style={{ gap: 16 }}>
                                 <AttendanceActionButton
                                     label="SECURE CHECK OUT"
-                                    onPress={handleCheckOut}
+                                    onPress={() => handleCheckOut('geo')}
                                     loading={isProcessing}
                                     gradientColors={[theme.colors.error, '#DC2626']}
                                     iconName="log-out"
+                                />
+                                <AttendanceActionButton
+                                    label="FIELD CHECK OUT"
+                                    onPress={() => handleCheckOut('field')}
+                                    loading={isProcessing}
+                                    gradientColors={[theme.colors.warning, '#D97706']}
+                                    iconName="walk"
                                 />
                             </View>
                         )}
@@ -467,6 +520,12 @@ const styles = StyleSheet.create({
         shadowRadius: 20,
         elevation: 10,
     },
+    // Gradients (as arrays for LinearGradient)
+    gradientPrimary: ['#2076C7', '#1CADA3'],     // Blue gradient
+    gradientSecondary: ['#0D9488', '#0F766E'],   // Teal gradient
+    gradientAccent: ['#8B5CF6', '#7C3AED'],      // Purple gradient
+    gradientSuccess: ['#10B981', '#059669'],     // Green gradient
+    gradientHeader: ['#2076C7', '#1A8FB0', '#1CADA3'], // Primary Blue → Peacock Green
     content: { padding: 20 },
     headerContent: {
         flexDirection: 'row',
@@ -481,6 +540,44 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: '600',
         marginTop: 4,
+    },
+        headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTextContainer: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#FFF',
+    },
+    headerSub: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.85)',
+        marginTop: 2,
+    },
+    historyBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    scrollArea: {
+        flex: 1,
     },
 
     // Geo Location Card

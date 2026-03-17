@@ -35,9 +35,13 @@ import { useAttendance } from '../../../context/AttendanceContext';
 import DailyReportService from '../../../services/DailyReportService';
 import api from '../../../services/api'; // the axios instance from ap.js
 
-const DailyReportFormScreen = ({ navigation }) => {
+const DailyReportFormScreen = ({ navigation, route }) => {
     const insets = useSafeAreaInsets();
     const { performCheckOut, loading: contextLoading } = useAttendance();
+
+    // From MarkAttendanceScreen
+    const checkoutType = route?.params?.type || 'geo';
+    const faceImage = route?.params?.faceImage || null;
 
     // ── Form State ──
     const [todaysWork, setTodaysWork] = useState('');
@@ -178,7 +182,7 @@ const DailyReportFormScreen = ({ navigation }) => {
 
             // Step 2: Perform geo checkout
             try {
-                await performCheckOut();
+                await performCheckOut(checkoutType, faceImage);
             } catch (checkoutError) {
                 Alert.alert(
                     'Report Sent, Check-Out Failed',

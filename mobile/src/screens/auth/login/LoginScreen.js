@@ -14,15 +14,14 @@ import {
     Modal,
     Dimensions
 } from 'react-native';
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import theme from '../../../constants/theme';
 import { useAuth } from '../../../context/AuthContext';
 import GradientButton from '../../../components/common/GradientButton';
-import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const LoginScreen = () => {
     const { login, resetPassword } = useAuth();
@@ -34,6 +33,10 @@ const LoginScreen = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Suggestion State
+    const [storedCode, setStoredCode] = useState('');
+    const [showSuggestion, setShowSuggestion] = useState(false);
+
     // Forgot Password Modal State
     const [forgotModalVisible, setForgotModalVisible] = useState(false);
     const [forgotEmpCode, setForgotEmpCode] = useState('');
@@ -44,12 +47,25 @@ const LoginScreen = () => {
     const [forgotError, setForgotError] = useState('');
     const [forgotSuccess, setForgotSuccess] = useState('');
 
+    // Load stored employee code on mount
+    useEffect(() => {
+        const loadStoredCode = async () => {
+            try {
+                const code = await AsyncStorage.getItem('lastEmployeeCode');
+                if (code) setStoredCode(code);
+            } catch (error) {
+                console.log('Failed to load stored code', error);
+            }
+        };
+        loadStoredCode();
+    }, []);
+
     // Pre-fill forgot password field with current userId when modal opens
     useEffect(() => {
         if (forgotModalVisible) {
-            setForgotEmpCode(userId);
+            setForgotEmpCode(userId || storedCode);
         }
-    }, [forgotModalVisible, userId]);
+    }, [forgotModalVisible, userId, storedCode]);
 
     const handleLogin = useCallback(async () => {
         Keyboard.dismiss();
@@ -63,7 +79,10 @@ const LoginScreen = () => {
         setLoading(true);
         try {
             const result = await login(userId.trim(), password);
-            if (!result.success) {
+            if (result.success) {
+                // Store employee code on successful login
+                await AsyncStorage.setItem('lastEmployeeCode', userId.trim());
+            } else {
                 setError(result.message || 'Login failed');
             }
         } catch (err) {
@@ -123,13 +142,30 @@ const LoginScreen = () => {
         setForgotModalVisible(true);
     }, []);
 
+    // Suggestion handlers
+    const handleFocusEmployee = () => {
+        if (storedCode && !userId) {
+            setShowSuggestion(true);
+        }
+    };
+
+    const handleChangeEmployee = (text) => {
+        setUserId(text);
+        if (text) setShowSuggestion(false);
+    };
+
+    const handleSuggestionPress = () => {
+        setUserId(storedCode);
+        setShowSuggestion(false);
+    };
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
         >
             <LinearGradient
-                colors={['#F9FAFB', '#F3F4F6']}
+                colors={['#F5F7FA', '#FFFFFF']}
                 style={styles.backgroundGradient}
             >
                 <ScrollView
@@ -137,158 +173,101 @@ const LoginScreen = () => {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Header Background (Premium Immersive) */}
-                    <LinearGradient
-                        colors={['#1E293B', '#0F172A']}
-                        style={styles.headerBackground}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                    >
-                        <View style={styles.headerCircle1} />
-                        <View style={styles.headerCircle2} />
-
-                        <View style={styles.logoWrapper}>
-                            <View style={styles.logoBg}>
-                                <Image
-                                    source={require('../../../../assets/images/infinity-logo.png')}
-                                    style={styles.logo}
-                                    resizeMode="contain"
-                                />
-                            </View>
-                        </View>
-
-                        <View style={styles.headerInfo}>
-                            <Text style={styles.brandTitle}>INFINITY <Text style={styles.brandSub}>HRMS</Text></Text>
-                            <Text style={styles.headerSubtitle}>Enterprise Identity Access</Text>
-                        </View>
-                    </LinearGradient>
+                    {/* Header with Logo and Welcome Back */}
+                    <View style={styles.header}>
+                        <Image
+                            source={require('../../../../assets/images/infinity-logo.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.welcomeText}>Welcome Back</Text>
+                    </View>
 
                     <View style={styles.content}>
-                        {/* Welcome Header */}
-                        <View style={styles.welcomeContainer}>
-                            <Text style={styles.welcomeTitle}>Welcome Back</Text>
-                            <Text style={styles.welcomeSubtitle}>Enter your credentials to access your workspace</Text>
-                        </View>
-
-                        {/* Login Card (Premium Floating) */}
+                        {/* Login Card */}
                         <View style={[styles.card, theme.shadow.large]}>
                             {error ? (
                                 <View style={styles.errorContainer}>
-                                    <View style={styles.errorIconBg}>
-                                        <Ionicons name="alert-circle" size={18} color="#B91C1C" />
-                                    </View>
+                                    <Ionicons name="alert-circle" size={20} color="#B91C1C" />
                                     <Text style={styles.errorText}>{error}</Text>
                                 </View>
                             ) : null}
 
+                            {/* Employee Code Input with Suggestion */}
                             <View style={styles.inputGroup}>
                                 <Text style={styles.label}>EMPLOYEE CODE</Text>
-                                <View style={[styles.inputWrapper, userId ? styles.inputFilled : null]}>
-                                    <View style={styles.iconContainer}>
-                                        <Ionicons name="person" size={18} color={userId ? theme.colors.primary : '#94A3B8'} />
-                                    </View>
+                                <View style={[styles.inputWrapper, userId && styles.inputFilled]}>
+                                    <Ionicons name="person-outline" size={20} color={userId ? theme.colors.primary : '#94A3B8'} style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
                                         placeholder="e.g. IA000**"
                                         value={userId}
-                                        onChangeText={setUserId}
+                                        onChangeText={handleChangeEmployee}
+                                        onFocus={handleFocusEmployee}
+                                        onBlur={() => setShowSuggestion(false)}
                                         autoCapitalize="characters"
                                         autoCorrect={false}
-                                        importantForAutofill="noExcludeDescendants"
                                         placeholderTextColor="#94A3B8"
                                     />
                                 </View>
+                                {showSuggestion && storedCode && (
+                                    <TouchableOpacity style={styles.suggestionChip} onPress={handleSuggestionPress}>
+                                        <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+                                        <Text style={styles.suggestionText}>Use last used: {storedCode}</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
 
+                            {/* Password Input */}
                             <View style={styles.inputGroup}>
                                 <View style={styles.labelRow}>
                                     <Text style={styles.label}>PASSWORD</Text>
-                                    <TouchableOpacity
-                                        onPress={openForgotModal}
-                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                    >
-                                        <Text style={styles.forgotPassLink}>Forgot password?</Text>
+                                    <TouchableOpacity onPress={openForgotModal}>
+                                        <Text style={styles.forgotPassLink}>Forgot?</Text>
                                     </TouchableOpacity>
                                 </View>
-                                <View style={[styles.inputWrapper, password ? styles.inputFilled : null]}>
-                                    <View style={styles.iconContainer}>
-                                        <Ionicons name="lock-closed" size={18} color={password ? theme.colors.primary : '#94A3B8'} />
-                                    </View>
+                                <View style={[styles.inputWrapper, password && styles.inputFilled]}>
+                                    <Ionicons name="lock-closed-outline" size={20} color={password ? theme.colors.primary : '#94A3B8'} style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
                                         placeholder="••••••••"
                                         value={password}
                                         onChangeText={setPassword}
                                         secureTextEntry={!showPassword}
-                                        autoCorrect={false}
-                                        importantForAutofill="noExcludeDescendants"
                                         placeholderTextColor="#94A3B8"
                                     />
-                                    <TouchableOpacity
-                                        onPress={() => setShowPassword(prev => !prev)}
-                                        style={styles.eyeIcon}
-                                    >
-                                        <Ionicons
-                                            name={showPassword ? 'eye-off' : 'eye'}
-                                            size={20}
-                                            color="#94A3B8"
-                                        />
+                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                        <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#94A3B8" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
 
-                            <TouchableOpacity
+                            {/* Login Button */}
+                            <GradientButton
+                                title="Secure Login"
                                 onPress={handleLogin}
                                 disabled={loading}
-                                style={styles.loginBtnWrapper}
-                                activeOpacity={0.8}
-                            >
-                                <LinearGradient
-                                    colors={loading ? ['#CBD5E1', '#94A3B8'] : theme.colors.gradientPrimary}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={styles.loginBtnGradient}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator color="#FFF" />
-                                    ) : (
-                                        <>
-                                            <Text style={styles.loginBtnText}>Secure Login</Text>
-                                            <Ionicons name="shield-checkmark" size={18} color="#FFF" style={styles.btnIcon} />
-                                        </>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                loading={loading}
+                                style={styles.loginButton}
+                                textStyle={styles.loginButtonText}
+                                icon={!loading && <Ionicons name="shield-checkmark-outline" size={20} color="#FFF" />}
+                            />
 
                             <View style={styles.divider}>
                                 <View style={styles.dividerLine} />
-                                <View style={styles.securityBadge}>
-                                    <Ionicons name="lock-closed" size={10} color="#94A3B8" />
-                                    <Text style={styles.dividerText}>SECURED ACCESS</Text>
-                                </View>
+                                <Text style={styles.dividerText}>SECURED ACCESS</Text>
                                 <View style={styles.dividerLine} />
                             </View>
                         </View>
 
-                        <Text style={styles.copyrightText}>
-                            Designed & Secured by <Text style={{ fontWeight: '700', color: '#64748B' }}>Infinity HRMS</Text>{'\n'}
-                            © 2026 Core Workforce Systems
+                        <Text style={styles.copyright}>
+                            Designed & Secured by Infinity HRMS{'\n'}© 2026 Core Workforce Systems
                         </Text>
                     </View>
                 </ScrollView>
             </LinearGradient>
 
-            {/* ── Forgot Password Modal ──────────────────────────────────────
-             *  FIX: On Android release builds, KeyboardAvoidingView behavior='height'
-             *  inside a Modal does not account for the software keyboard correctly.
-             *  Solution:
-             *   1. KeyboardAvoidingView wraps the ENTIRE modal (overlay + sheet)
-             *      with behavior='padding' on BOTH platforms (reliable in Modal context).
-             *   2. Modal content is wrapped in ScrollView so the user can scroll
-             *      inputs into view even on small screens.
-             *   3. Modal sheet is capped at 90% screen height (maxHeight) so it
-             *      never overflows, keeping the drag-to-dismiss area accessible.
-             * ─────────────────────────────────────────────────────────────── */}
+            {/* Forgot Password Modal (unchanged logic, updated styling) */}
             <Modal
                 visible={forgotModalVisible}
                 animationType="none"
@@ -296,25 +275,10 @@ const LoginScreen = () => {
                 statusBarTranslucent={true}
                 onRequestClose={closeForgotModal}
             >
-                {/* KeyboardAvoidingView must be the outermost element inside Modal */}
-                <KeyboardAvoidingView
-                    behavior="padding"
-                    style={styles.modalKAV}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-                >
-                    {/* Semi-transparent backdrop – tap to close */}
-                    <TouchableOpacity
-                        style={styles.modalDismissArea}
-                        activeOpacity={1}
-                        onPress={closeForgotModal}
-                    />
-
-                    {/* Bottom sheet */}
+                <KeyboardAvoidingView behavior="padding" style={styles.modalKAV}>
+                    <TouchableOpacity style={styles.modalDismissArea} activeOpacity={1} onPress={closeForgotModal} />
                     <View style={styles.modalContent}>
-                        {/* Drag handle */}
                         <View style={styles.dragHandle} />
-
-                        {/* Header */}
                         <View style={styles.modalHeader}>
                             <View>
                                 <Text style={styles.modalTitle}>Reset Password</Text>
@@ -325,57 +289,40 @@ const LoginScreen = () => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Scrollable body – ensures inputs are reachable above keyboard */}
-                        <ScrollView
-                            keyboardShouldPersistTaps="handled"
-                            showsVerticalScrollIndicator={false}
-                            bounces={false}
-                        >
+                        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                             {forgotError ? (
                                 <View style={styles.modalErrorContainer}>
-                                    <View style={styles.modalErrorIconBg}>
-                                        <Ionicons name="alert-circle" size={16} color="#B91C1C" />
-                                    </View>
+                                    <Ionicons name="alert-circle" size={16} color="#B91C1C" />
                                     <Text style={styles.modalErrorText}>{forgotError}</Text>
                                 </View>
                             ) : null}
 
                             {forgotSuccess ? (
-                                <View style={styles.successContainer}>
-                                    <View style={styles.modalSuccessIconBg}>
-                                        <Ionicons name="checkmark-circle" size={16} color="#166534" />
-                                    </View>
-                                    <Text style={styles.successText}>{forgotSuccess}</Text>
+                                <View style={styles.modalSuccessContainer}>
+                                    <Ionicons name="checkmark-circle" size={16} color="#166534" />
+                                    <Text style={styles.modalSuccessText}>{forgotSuccess}</Text>
                                 </View>
                             ) : null}
 
-                            {/* Employee Code */}
                             <View style={styles.modalInputGroup}>
                                 <Text style={styles.modalLabel}>Employee Code</Text>
                                 <View style={styles.modalInputWrapper}>
-                                    <View style={styles.modalInputIconBox}>
-                                        <Ionicons name="id-card-outline" size={16} color={theme.colors.primary} />
-                                    </View>
+                                    <Ionicons name="id-card-outline" size={16} color={theme.colors.primary} style={styles.modalInputIcon} />
                                     <TextInput
                                         style={styles.modalInput}
                                         placeholder="e.g. IA00087"
                                         value={forgotEmpCode}
                                         onChangeText={setForgotEmpCode}
                                         autoCapitalize="characters"
-                                        autoCorrect={false}
                                         placeholderTextColor="#94A3B8"
-                                        returnKeyType="next"
                                     />
                                 </View>
                             </View>
 
-                            {/* New Password */}
                             <View style={styles.modalInputGroup}>
                                 <Text style={styles.modalLabel}>New Password</Text>
                                 <View style={styles.modalInputWrapper}>
-                                    <View style={styles.modalInputIconBox}>
-                                        <Ionicons name="lock-closed-outline" size={16} color={theme.colors.primary} />
-                                    </View>
+                                    <Ionicons name="lock-closed-outline" size={16} color={theme.colors.primary} style={styles.modalInputIcon} />
                                     <TextInput
                                         style={styles.modalInput}
                                         placeholder="At least 6 characters"
@@ -383,18 +330,14 @@ const LoginScreen = () => {
                                         onChangeText={setNewPassword}
                                         secureTextEntry={!showForgotPasswords}
                                         placeholderTextColor="#94A3B8"
-                                        returnKeyType="next"
                                     />
                                 </View>
                             </View>
 
-                            {/* Confirm Password */}
                             <View style={styles.modalInputGroup}>
                                 <Text style={styles.modalLabel}>Confirm Password</Text>
                                 <View style={styles.modalInputWrapper}>
-                                    <View style={styles.modalInputIconBox}>
-                                        <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.primary} />
-                                    </View>
+                                    <Ionicons name="shield-checkmark-outline" size={16} color={theme.colors.primary} style={styles.modalInputIcon} />
                                     <TextInput
                                         style={styles.modalInput}
                                         placeholder="Re-enter new password"
@@ -402,44 +345,25 @@ const LoginScreen = () => {
                                         onChangeText={setConfirmPassword}
                                         secureTextEntry={!showForgotPasswords}
                                         placeholderTextColor="#94A3B8"
-                                        returnKeyType="done"
-                                        onSubmitEditing={handleForgotPassword}
                                     />
-                                    <TouchableOpacity
-                                        onPress={() => setShowForgotPasswords(!showForgotPasswords)}
-                                        style={styles.modalEyeBtn}
-                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                    >
-                                        <Ionicons
-                                            name={showForgotPasswords ? 'eye-outline' : 'eye-off-outline'}
-                                            size={18}
-                                            color="#94A3B8"
-                                        />
+                                    <TouchableOpacity onPress={() => setShowForgotPasswords(!showForgotPasswords)}>
+                                        <Ionicons name={showForgotPasswords ? 'eye-outline' : 'eye-off-outline'} size={18} color="#94A3B8" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
 
-                            {/* Action Buttons */}
                             <View style={styles.modalActionRow}>
-                                <TouchableOpacity
-                                    onPress={closeForgotModal}
-                                    style={styles.modalCancelButton}
-                                >
+                                <TouchableOpacity onPress={closeForgotModal} style={styles.modalCancelButton}>
                                     <Text style={styles.modalCancelText}>Cancel</Text>
                                 </TouchableOpacity>
-
-                                <View style={{ flex: 2 }}>
-                                    <GradientButton
-                                        title={forgotLoading ? 'Processing...' : 'Update Password'}
-                                        onPress={handleForgotPassword}
-                                        disabled={forgotLoading || !!forgotSuccess}
-                                        loading={forgotLoading}
-                                        style={styles.modalSubmitButton}
-                                    />
-                                </View>
+                                <GradientButton
+                                    title={forgotLoading ? 'Processing...' : 'Update Password'}
+                                    onPress={handleForgotPassword}
+                                    disabled={forgotLoading || !!forgotSuccess}
+                                    loading={forgotLoading}
+                                    style={styles.modalSubmitButton}
+                                />
                             </View>
-
-                            {/* Extra bottom padding above home indicator / nav bar */}
                             <View style={{ height: Platform.OS === 'ios' ? 24 : 16 }} />
                         </ScrollView>
                     </View>
@@ -452,7 +376,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#F5F7FA',
     },
     backgroundGradient: {
         flex: 1,
@@ -460,133 +384,58 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
     },
-    headerBackground: {
-        height: 280,
-        justifyContent: 'center',
+    header: {
         alignItems: 'center',
-        paddingBottom: 40,
-        position: 'relative',
-        overflow: 'hidden',
-    },
-    headerCircle1: {
-        position: 'absolute',
-        width: 300,
-        height: 300,
-        borderRadius: 150,
-        backgroundColor: 'rgba(79, 70, 229, 0.15)',
-        top: -100,
-        right: -50,
-    },
-    headerCircle2: {
-        position: 'absolute',
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        bottom: -50,
-        left: -30,
-    },
-    logoWrapper: {
-        marginTop: Platform.OS === 'ios' ? 40 : 20,
-    },
-    logoBg: {
-        backgroundColor: '#FFF',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 20,
-        elevation: 10,
+        paddingTop: Platform.OS === 'ios' ? 100 : 40,
+        paddingBottom: 20,
     },
     logo: {
-        width: 120,
-        height: 48,
+        width: 140,
+        height: 56,
+        marginBottom: 12,
     },
-    headerInfo: {
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    brandTitle: {
-        fontSize: 18,
-        fontWeight: '900',
-        color: '#FFF',
-        letterSpacing: 2,
-    },
-    brandSub: {
-        fontWeight: '400',
-        color: 'rgba(255,255,255,0.7)',
-    },
-    headerSubtitle: {
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.6)',
-        marginTop: 4,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        fontWeight: '600',
+    welcomeText: {
+        fontSize: 28,
+        fontWeight: '700',
+        color: '#1E293B',
+        letterSpacing: -0.5,
     },
     content: {
         flex: 1,
-        paddingHorizontal: 20,
-        marginTop: -65,
-    },
-    welcomeContainer: {
-        marginBottom: 24,
-        alignItems: 'center',
-    },
-    welcomeTitle: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#FFF',
-        marginBottom: 6,
-        letterSpacing: -0.5,
-    },
-    welcomeSubtitle: {
-        fontSize: 13,
-        color: 'rgba(255,255,255,0.7)',
-        fontWeight: '500',
-        textAlign: 'center',
+        paddingHorizontal: 24,
+        paddingBottom: 40,
     },
     card: {
         backgroundColor: '#FFFFFF',
         borderRadius: 32,
         padding: 28,
         shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.1,
-        shadowRadius: 30,
-        elevation: 15,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+        elevation: 8,
         borderWidth: 1,
-        borderColor: 'rgba(241, 245, 249, 0.8)',
+        borderColor: '#F1F5F9',
     },
     errorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FEF2F2',
-        padding: 14,
+        padding: 12,
         borderRadius: 16,
-        marginBottom: 24,
+        marginBottom: 20,
         borderWidth: 1,
         borderColor: '#FEE2E2',
-    },
-    errorIconBg: {
-        width: 32,
-        height: 32,
-        borderRadius: 10,
-        backgroundColor: '#FFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 10,
+        gap: 8,
     },
     errorText: {
         flex: 1,
         color: '#B91C1C',
-        fontSize: 13,
-        fontWeight: '700',
+        fontSize: 14,
+        fontWeight: '600',
     },
     inputGroup: {
-        marginBottom: 24,
+        marginBottom: 20,
     },
     labelRow: {
         flexDirection: 'row',
@@ -595,78 +444,67 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     label: {
-        fontSize: 10,
-        fontWeight: '800',
-        color: '#94A3B8',
-        letterSpacing: 1,
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#64748B',
+        letterSpacing: 0.5,
         textTransform: 'uppercase',
     },
     forgotPassLink: {
-        fontSize: 12,
-        fontWeight: '700',
+        fontSize: 14,
+        fontWeight: '600',
         color: theme.colors.primary,
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8FAFC',
-        borderRadius: 16,
+        borderRadius: 20,
         paddingHorizontal: 16,
-        height: 58,
+        height: 56,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
     inputFilled: {
         borderColor: theme.colors.primary,
-        backgroundColor: '#FFF',
+        backgroundColor: '#FFFFFF',
     },
-    iconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: '#FFF',
-        alignItems: 'center',
-        justifyContent: 'center',
+    inputIcon: {
         marginRight: 12,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
     },
     input: {
         flex: 1,
-        fontSize: 15,
-        color: '#1E293B',
-        fontWeight: '600',
-        height: '100%',
-    },
-    eyeIcon: {
-        padding: 8,
-    },
-    loginBtnWrapper: {
-        marginTop: 8,
-        borderRadius: 18,
-        overflow: 'hidden',
-        shadowColor: theme.colors.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 8,
-    },
-    loginBtnGradient: {
-        flexDirection: 'row',
-        height: 58,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 18,
-    },
-    loginBtnText: {
         fontSize: 16,
-        fontWeight: '900',
-        color: '#FFF',
-        letterSpacing: 1,
-        textTransform: 'uppercase',
+        color: '#1E293B',
+        fontWeight: '500',
     },
-    btnIcon: {
-        marginLeft: 10,
+    suggestionChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 30,
+        marginTop: 8,
+        alignSelf: 'flex-start',
+        gap: 6,
+        borderWidth: 1,
+        borderColor: '#DBEAFE',
+    },
+    suggestionText: {
+        fontSize: 14,
+        color: theme.colors.primary,
+        fontWeight: '600',
+    },
+    loginButton: {
+        marginTop: 8,
+        borderRadius: 20,
+        height: 56,
+    },
+    loginButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        letterSpacing: 0.5,
     },
     divider: {
         flexDirection: 'row',
@@ -678,40 +516,25 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: '#F1F5F9',
     },
-    securityBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F8FAFC',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 100,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
-        marginHorizontal: 12,
-        gap: 6,
-    },
     dividerText: {
-        fontSize: 9,
-        color: '#94A3B8',
-        fontWeight: '800',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    copyrightText: {
-        textAlign: 'center',
-        marginTop: 40,
-        paddingBottom: 40,
-        color: '#94A3B8',
         fontSize: 11,
+        color: '#94A3B8',
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        marginHorizontal: 12,
+    },
+    copyright: {
+        textAlign: 'center',
+        marginTop: 32,
+        color: '#94A3B8',
+        fontSize: 12,
         lineHeight: 18,
         fontWeight: '500',
     },
-
     // Modal Styles
-    // ── KeyboardAvoidingView must be the root inside Modal ──
     modalKAV: {
         flex: 1,
-        backgroundColor: 'rgba(15, 23, 42, 0.72)',
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
         justifyContent: 'flex-end',
     },
     modalDismissArea: {
@@ -721,160 +544,132 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        // Cap height at 90% so content is scrollable and backdrop remains tappable
-        maxHeight: SCREEN_HEIGHT * 0.90,
-        paddingHorizontal: 28,
+        maxHeight: SCREEN_HEIGHT * 0.9,
+        paddingHorizontal: 24,
         paddingTop: 12,
         paddingBottom: 0,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.12,
+        shadowOpacity: 0.08,
         shadowRadius: 24,
         elevation: 24,
     },
     dragHandle: {
-        width: 44,
+        width: 40,
         height: 4,
         borderRadius: 2,
         backgroundColor: '#E2E8F0',
         alignSelf: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 24,
+        marginBottom: 20,
     },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: '900',
+        fontSize: 22,
+        fontWeight: '700',
         color: '#1E293B',
-        letterSpacing: -0.5,
-        marginBottom: 3,
+        marginBottom: 4,
     },
     modalSubtitle: {
-        fontSize: 12,
-        color: '#94A3B8',
-        fontWeight: '500',
+        fontSize: 14,
+        color: '#64748B',
     },
     closeButton: {
         backgroundColor: '#F1F5F9',
         borderRadius: 10,
-        padding: 8,
+        padding: 6,
     },
     modalErrorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#FEF2F2',
-        padding: 14,
-        borderRadius: 14,
-        marginBottom: 20,
+        padding: 12,
+        borderRadius: 16,
+        marginBottom: 16,
+        gap: 8,
         borderWidth: 1,
         borderColor: '#FEE2E2',
-    },
-    modalErrorIconBg: {
-        width: 30,
-        height: 30,
-        borderRadius: 10,
-        backgroundColor: '#FFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 10,
     },
     modalErrorText: {
         flex: 1,
         color: '#B91C1C',
-        fontSize: 13,
-        fontWeight: '700',
+        fontSize: 14,
+        fontWeight: '600',
     },
-    successContainer: {
+    modalSuccessContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F0FDF4',
-        padding: 14,
-        borderRadius: 14,
-        marginBottom: 20,
+        padding: 12,
+        borderRadius: 16,
+        marginBottom: 16,
+        gap: 8,
         borderWidth: 1,
         borderColor: '#DCFCE7',
     },
-    modalSuccessIconBg: {
-        width: 30,
-        height: 30,
-        borderRadius: 10,
-        backgroundColor: '#FFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 10,
-    },
-    successText: {
+    modalSuccessText: {
         flex: 1,
         color: '#166534',
-        fontSize: 13,
-        fontWeight: '700',
+        fontSize: 14,
+        fontWeight: '600',
     },
     modalInputGroup: {
-        marginBottom: 18,
+        marginBottom: 16,
     },
     modalLabel: {
-        fontSize: 10,
-        fontWeight: '800',
-        color: '#94A3B8',
-        marginBottom: 8,
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#64748B',
+        marginBottom: 6,
         textTransform: 'uppercase',
-        letterSpacing: 1,
     },
     modalInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8FAFC',
-        borderRadius: 14,
-        paddingHorizontal: 14,
-        height: 54,
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        height: 52,
         borderWidth: 1,
         borderColor: '#E2E8F0',
     },
-    modalInputIconBox: {
-        width: 32,
-        height: 32,
-        borderRadius: 10,
-        backgroundColor: '#EFF6FF',
-        alignItems: 'center',
-        justifyContent: 'center',
+    modalInputIcon: {
         marginRight: 12,
     },
     modalInput: {
         flex: 1,
-        fontSize: 15,
+        fontSize: 16,
         color: '#1E293B',
-        fontWeight: '600',
-        height: '100%',
-    },
-    modalEyeBtn: {
-        padding: 6,
+        fontWeight: '500',
     },
     modalActionRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
-        marginTop: 20,
-    },
-    modalSubmitButton: {
-        height: 54,
-        borderRadius: 16,
+        gap: 12,
+        marginTop: 24,
+        marginBottom: 20,
     },
     modalCancelButton: {
         flex: 1,
-        height: 54,
+        height: 52,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#F1F5F9',
-        borderRadius: 16,
+        borderRadius: 20,
     },
     modalCancelText: {
-        fontSize: 15,
-        color: '#64748B',
-        fontWeight: '700',
+        fontSize: 16,
+        color: '#475569',
+        fontWeight: '600',
+    },
+    modalSubmitButton: {
+        flex: 2,
+        height: 52,
+        borderRadius: 20,
     },
 });
 

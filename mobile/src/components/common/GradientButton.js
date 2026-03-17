@@ -6,7 +6,7 @@ import theme from '../../constants/theme';
 const GradientButton = ({
     onPress,
     title,
-    colors = theme.colors.gradientPrimary, // Use theme gradient
+    colors = theme.colors.gradientPrimary,
     start = { x: 0, y: 0 },
     end = { x: 1, y: 0 },
     style,
@@ -23,16 +23,16 @@ const GradientButton = ({
             style={[styles.container, style]}
         >
             <LinearGradient
-                colors={disabled ? ['#d1d5db', '#9ca3af'] : colors}
+                colors={disabled ? ['#CBD5E1', '#94A3B8'] : colors}
                 start={start}
                 end={end}
                 style={styles.gradient}
             >
                 {loading ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color="#FFFFFF" />
                 ) : (
                     <>
-                        {icon && icon}
+                        {icon}
                         <Text style={[styles.text, textStyle, icon && { marginLeft: 8 }]}>
                             {title}
                         </Text>
@@ -45,7 +45,7 @@ const GradientButton = ({
 
 const styles = StyleSheet.create({
     container: {
-        borderRadius: 16,
+        borderRadius: 20,
         overflow: 'hidden',
         width: '100%',
     },
@@ -57,9 +57,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     text: {
-        color: '#fff',
+        color: '#FFFFFF',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
         letterSpacing: 0.5,
     },
 });

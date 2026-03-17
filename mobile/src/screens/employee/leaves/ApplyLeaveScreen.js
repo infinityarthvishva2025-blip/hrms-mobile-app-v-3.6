@@ -614,34 +614,28 @@ const ApplyLeaveScreen = ({ navigation }) => {
     );
 };
 
-// Styles remain unchanged – keep your existing styles
+// ==================== ENHANCED STYLES ====================
+// All functional code remains unchanged; only the visual styles have been upgraded.
+// ==========================================================
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: theme.colors.background,
     },
     headerGradient: {
-        paddingHorizontal: 20,
-        paddingBottom: 24,
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.lg,
+        borderBottomLeftRadius: theme.borderRadius.xl,
+        borderBottomRightRadius: theme.borderRadius.xl,
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 20,
-    },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
+        marginBottom: theme.spacing.md,
     },
     headerTextContainer: {
         flex: 1,
-        marginLeft: 16,
+        marginLeft: theme.spacing.md,
     },
     headerTitle: {
         fontSize: 20,
@@ -656,7 +650,7 @@ const styles = StyleSheet.create({
     historyBtn: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: theme.borderRadius.round,
         backgroundColor: 'rgba(255,255,255,0.2)',
         alignItems: 'center',
         justifyContent: 'center',
@@ -665,40 +659,42 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        padding: 20,
+        padding: theme.spacing.lg,
     },
     formGroup: {
-        marginBottom: 20,
+        marginBottom: theme.spacing.lg,
     },
     fieldLabel: {
         fontSize: 14,
         fontWeight: '600',
         color: theme.colors.text,
-        marginBottom: 8,
-        marginLeft: 4,
+        marginBottom: theme.spacing.xs,
+        marginLeft: theme.spacing.xs,
     },
     pickerWrapper: {
-        backgroundColor: '#FFF',
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        borderRadius: 14,
+        borderRadius: theme.borderRadius.lg,
         overflow: 'hidden',
+        ...theme.shadow.light,
     },
     picker: {
-        height: 50,
+        height: 56,
         width: '100%',
         color: theme.colors.text,
     },
     dateInput: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFF',
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        borderRadius: 14,
-        paddingHorizontal: 16,
-        height: 50,
-        gap: 8,
+        borderRadius: theme.borderRadius.lg,
+        paddingHorizontal: theme.spacing.md,
+        height: 56,
+        gap: theme.spacing.sm,
+        ...theme.shadow.light,
     },
     dateValueText: {
         fontSize: 15,
@@ -708,37 +704,39 @@ const styles = StyleSheet.create({
     compOffSelector: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFF',
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        borderRadius: 14,
-        paddingHorizontal: 16,
-        height: 50,
+        borderRadius: theme.borderRadius.lg,
+        paddingHorizontal: theme.spacing.md,
+        height: 56,
         justifyContent: 'space-between',
+        ...theme.shadow.light,
     },
     compOffSelectorText: {
         flex: 1,
         fontSize: 15,
         color: theme.colors.text,
-        marginLeft: 10,
+        marginLeft: theme.spacing.sm,
     },
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFF',
+        backgroundColor: theme.colors.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
-        borderRadius: 14,
-        paddingHorizontal: 16,
-        height: 50,
+        borderRadius: theme.borderRadius.lg,
+        paddingHorizontal: theme.spacing.md,
+        height: 56,
+        ...theme.shadow.light,
     },
     textAreaWrapper: {
         height: 'auto',
-        paddingVertical: 12,
+        paddingVertical: theme.spacing.md,
         alignItems: 'flex-start',
     },
     inputIcon: {
-        marginRight: 10,
+        marginRight: theme.spacing.sm,
     },
     textInput: {
         flex: 1,
@@ -754,33 +752,33 @@ const styles = StyleSheet.create({
     loadingText: {
         fontSize: 12,
         color: theme.colors.textTertiary,
-        marginTop: 8,
+        marginTop: theme.spacing.sm,
         textAlign: 'center',
     },
     submitBtn: {
-        borderRadius: 14,
-        marginTop: 10,
+        borderRadius: theme.borderRadius.lg,
+        marginTop: theme.spacing.lg,
     },
     // Modal Styles
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
+        backgroundColor: theme.colors.overlay,
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalContent: {
         width: '85%',
         maxHeight: '60%',
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        padding: 20,
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.borderRadius.xl,
+        padding: theme.spacing.lg,
         ...theme.shadow.medium,
     },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: theme.spacing.md,
     },
     modalTitle: {
         fontSize: 16,
@@ -790,10 +788,10 @@ const styles = StyleSheet.create({
     modalItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 14,
+        paddingVertical: theme.spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.divider,
-        gap: 12,
+        gap: theme.spacing.sm,
     },
     modalItemText: {
         fontSize: 15,
@@ -802,7 +800,7 @@ const styles = StyleSheet.create({
     modalEmpty: {
         textAlign: 'center',
         color: theme.colors.textTertiary,
-        paddingVertical: 20,
+        paddingVertical: theme.spacing.lg,
     },
 });
 
